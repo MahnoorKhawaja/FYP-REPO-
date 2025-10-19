@@ -1,18 +1,26 @@
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./component/navbar";
 import Home from "./pages/home";
 import Footer from "./component/footer";
+import RhinoplastyPage from "./pages/RhinoplastyPage";
+
 function App() {
   return (
-    <>
+    <Router>
       {/* Navbar on top */}
       <div className="relative z-[1000]">
         <Navbar />
       </div>
 
-      {/* Page content */}
-      <Home />
-      <Footer/>
-    </>
+      {/* Define all routes */}
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/rhinoplasty" element={<RhinoplastyPage />} />
+      </Routes>
+
+      {/* Footer on all pages */}
+      <Footer />
+    </Router>
   );
 }
 
