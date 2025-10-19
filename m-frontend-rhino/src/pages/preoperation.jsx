@@ -46,10 +46,10 @@ export default function PreOperationPage() {
         },
       });
 
-      console.log("✅ Upload successful:", response.data);
+      console.log("Upload successful:", response.data);
       alert("Images uploaded successfully!");
     } catch (error) {
-      console.error("❌ Upload failed:", error);
+      console.error("Upload failed:", error);
       alert("Failed to upload images. Check the console for details.");
     } finally {
       setLoading(false);
