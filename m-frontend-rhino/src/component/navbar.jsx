@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Menu, X, Beaker } from 'lucide-react';
-
+import Logo from '../assets/Logo.png'
+import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -11,8 +12,8 @@ const Navbar = () => {
           {/* Logo - Left Side */}
           <div className="flex items-center">
             <div className="flex items-center flex-shrink-0">
-              <span className="ml-2 text-xl font-semibold text-gray-900">
-                Rhino AI
+              <span className="ml-2 ">
+              <img src={Logo} alt="" className='w-20 object-contain' />
               </span>
             </div>
           </div>
@@ -53,21 +54,12 @@ const Navbar = () => {
 
           {/* CTA Buttons - Right Side */}
           <div className="flex items-center space-x-4">
-            <div className="items-center hidden space-x-4 md:flex">
-              <a
-                href="#login"
-                className="px-3 py-2 text-sm font-medium text-gray-700 transition-colors duration-200 hover:text-blue-600"
-              >
-                Sign In
-              </a>
-              <a
-                href="#demo"
-                className="px-4 py-2 text-sm font-medium text-white transition-all duration-200 bg-blue-600 rounded-md shadow-sm hover:bg-blue-700 hover:shadow-md"
-              >
-                Get Demo
-              </a>
-            </div>
-
+             <SignedOut>
+        <SignInButton />
+      </SignedOut>
+      <SignedIn>
+        <UserButton />
+      </SignedIn>
             {/* Mobile menu button */}
             <div className="md:hidden">
               <button
@@ -138,6 +130,9 @@ const Navbar = () => {
       </div>
     </nav>
   );
+};
+
+export default Navbar;
 };
 
 export default Navbar;
