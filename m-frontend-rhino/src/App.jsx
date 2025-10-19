@@ -3,6 +3,7 @@ import Navbar from "./component/navbar";
 import Home from "./pages/home";
 import Footer from "./component/footer";
 import RhinoplastyPage from "./pages/RhinoplastyPage";
+import PreOperationPage from "./pages/preoperation";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/rhinoplasty" element={<RhinoplastyPage />} />
+        <Route path="/preoperation" element={<PreOperationPage />} />
       </Routes>
 
       {/* Footer on all pages */}
