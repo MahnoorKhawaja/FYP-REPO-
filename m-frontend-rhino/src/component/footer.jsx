@@ -8,11 +8,10 @@ const Footer = () => {
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center">
-              <span className="ml-2 text-xl font-bold">Rhino AI Nose</span>
+              <span className="ml-2 text-xl font-bold">RHINO VISION</span>
             </div>
             <p className="max-w-md mt-4 text-gray-400">
-              Revolutionizing scent intelligence with advanced AI and cutting-edge sensor technology. 
-              Making the world safer and more efficient through olfactory analysis.
+              An intelligent evaluation platform that bridges the gap between surgical expertise and objective outcome assessment in rhinoplasty
             </p>
             <div className="flex mt-6 space-x-4">
               <Twitter className="w-6 h-6 text-gray-400 cursor-pointer hover:text-white" />
