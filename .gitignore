@@ -1,0 +1,6 @@
+venv/
+lvenv/
+backend/venv/
+backend/lvenv/
+**/venv/
+**/lvenv/

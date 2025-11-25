@@ -11,13 +11,18 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.50.0",
+    "@egjs/view3d": "^2.10.1",
+    "@react-three/drei": "^10.7.6",
+    "@react-three/fiber": "^9.4.0",
     "axios": "^1.12.2",
     "gsap": "^3.13.0",
     "lucide-react": "^0.544.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.4",
-    "three": "^0.180.0"
+    "react-three-viewer": "^0.0.5",
+    "three": "^0.180.0",
+    "three-stdlib": "^2.36.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",

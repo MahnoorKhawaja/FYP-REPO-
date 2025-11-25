@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom"; 
 
 export default function PreOperationPage() {
+  const navigate = useNavigate();  
   const [images, setImages] = useState({
     front: null,
     left: null,
@@ -47,7 +49,9 @@ export default function PreOperationPage() {
       });
 
       console.log("Upload successful:", response.data);
+      localStorage.setItem("resultFilename", response.data["3d_results"]);
       alert("Images uploaded successfully!");
+      navigate("/success");
     } catch (error) {
       console.error("Upload failed:", error);
       alert("Failed to upload images. Check the console for details.");

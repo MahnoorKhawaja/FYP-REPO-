@@ -4,6 +4,7 @@ import Home from "./pages/home";
 import Footer from "./component/footer";
 import RhinoplastyPage from "./pages/RhinoplastyPage";
 import PreOperationPage from "./pages/preoperation";
+import ThreeD_VertexColorViewer from "./pages/ThreeD_Viewer";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/rhinoplasty" element={<RhinoplastyPage />} />
         <Route path="/preoperation" element={<PreOperationPage />} />
+        <Route path="/success" element={<ThreeD_VertexColorViewer />} />
       </Routes>
 
       {/* Footer on all pages */}
