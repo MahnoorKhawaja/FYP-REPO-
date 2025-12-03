@@ -5,6 +5,7 @@ import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { useClerk } from "@clerk/clerk-react"
 // Register ScrollTrigger plugin
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
@@ -68,6 +69,8 @@ const Home = () => {
   const useCasesRef = useRef(null);
   const techRef = useRef(null);
   const metricsRef = useRef(null);
+  const { openSignIn, openSignUp } = useClerk()
+
 
   useEffect(() => {
     // Hero section animations
@@ -251,17 +254,24 @@ const Home = () => {
 
               {/* CTA Buttons */}
               <div ref={ctaRef} className="flex flex-col justify-center gap-6 mt-12 sm:flex-row lg:justify-start">
-                <button className="flex items-center justify-center px-10 py-5 text-lg font-bold text-white transition-all duration-300 transform shadow-2xl group bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl hover:from-blue-700 hover:to-purple-700 hover:shadow-3xl hover:-translate-y-1">
-                   Log In
+                <button
+                  onClick={() => openSignIn()}
+                  className="flex items-center justify-center px-10 py-5 text-lg font-bold text-white transition-all duration-300 transform shadow-2xl group bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl hover:from-blue-700 hover:to-purple-700 hover:shadow-3xl hover:-translate-y-1"
+                  >
+                  Log In
                   <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
                 </button>
-                
-                <button className="flex items-center justify-center px-10 py-5 text-lg font-bold text-white transition-all duration-300 border-2 shadow-xl group bg-white/10 backdrop-blur-lg border-white/30 rounded-2xl hover:bg-white/20 hover:shadow-2xl">
-                                   Sign Up
+
+                <button
+                  onClick={() => openSignUp()}
+                  className="flex items-center justify-center px-10 py-5 text-lg font-bold text-white transition-all duration-300 border-2 shadow-xl group bg-white/10 backdrop-blur-lg border-white/30 rounded-2xl hover:bg-white/20 hover:shadow-2xl"
+                  >
+                  Sign Up
                 </button>
+
             
                 <button onClick={()=>navigate("/rhinoplasty")} className="flex items-center justify-center px-10 py-5 text-lg font-bold text-white transition-all duration-300 border-2 shadow-xl group bg-white/10 backdrop-blur-lg border-white/30 rounded-2xl hover:bg-white/20 hover:shadow-2xl">
-             Instant Work
+              Analysis
                 </button>
                
               </div>
