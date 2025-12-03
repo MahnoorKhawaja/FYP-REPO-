@@ -1,4 +1,6 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
+
 import Navbar from "./component/navbar";
 import Home from "./pages/home";
 import Footer from "./component/footer";
@@ -9,21 +11,78 @@ import ThreeD_VertexColorViewer from "./pages/ThreeD_Viewer";
 function App() {
   return (
     <Router>
-      {/* Navbar on top */}
+
       <div className="relative z-[1000]">
         <Navbar />
       </div>
 
-      {/* Define all routes */}
       <Routes>
+
+        {/* HOME – visible to all */}
         <Route path="/" element={<Home />} />
-        <Route path="/rhinoplasty" element={<RhinoplastyPage />} />
-        <Route path="/preoperation" element={<PreOperationPage />} />
-        <Route path="/success" element={<ThreeD_VertexColorViewer />} />
+
+        {/* Protected routes */}
+        <Route
+        path="/rhinoplasty"
+        element={
+        <>
+        <SignedIn>
+        <RhinoplastyPage />
+        </SignedIn>
+        <SignedOut>
+        <RedirectToSignIn />
+        </SignedOut>
+        </>
+        }
+        />
+
+        <Route
+        path="/preoperation"
+        element={
+        <>
+        <SignedIn>
+        <PreOperationPage />
+        </SignedIn>
+        <SignedOut>
+        <RedirectToSignIn />
+        </SignedOut>
+        </>
+        }
+        />
+
+        <Route
+        path="/success"
+        element={
+        <>
+        <SignedIn>
+        <ThreeD_VertexColorViewer />
+        </SignedIn>
+        <SignedOut>
+        <RedirectToSignIn />
+        </SignedOut>
+        </>
+        }
+        />
+
+        {/* Safety fallback */}
+        <Route
+          path="*"
+          element={
+            <>
+              <SignedIn>
+                <Navigate to="/" />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
+        />
+
       </Routes>
 
-      {/* Footer on all pages */}
       <Footer />
+
     </Router>
   );
 }
