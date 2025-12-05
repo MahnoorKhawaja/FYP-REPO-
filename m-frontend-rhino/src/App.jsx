@@ -7,6 +7,13 @@ import Footer from "./component/footer";
 import RhinoplastyPage from "./pages/RhinoplastyPage";
 import PreOperationPage from "./pages/preoperation";
 import ThreeD_VertexColorViewer from "./pages/ThreeD_Viewer";
+import Features from "./pages/Features";
+import Pricing from "./pages/Pricing";
+import Demo from "./pages/Demo";
+import About from "./pages/About";
+import Careers from "./pages/Careers";
+import Contact from "./pages/Contact";
+import Privacy from "./pages/Privacy";
 
 function App() {
   return (
@@ -20,6 +27,13 @@ function App() {
 
         {/* HOME – visible to all */}
         <Route path="/" element={<Home />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route path="/demo" element={<Demo />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/career" element={<Careers />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/privacy" element={<Privacy />} />
 
         {/* Protected routes */}
         <Route
@@ -65,19 +79,7 @@ function App() {
         />
 
         {/* Safety fallback */}
-        <Route
-          path="*"
-          element={
-            <>
-              <SignedIn>
-                <Navigate to="/" />
-              </SignedIn>
-              <SignedOut>
-                <RedirectToSignIn />
-              </SignedOut>
-            </>
-          }
-        />
+        <Route path="*" element={<Navigate to="/" />} />
 
       </Routes>
 
