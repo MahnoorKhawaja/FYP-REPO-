@@ -50,6 +50,7 @@ export default function PreOperationPage() {
 
       console.log("Upload successful:", response.data);
       localStorage.setItem("resultFilename", response.data["3d_results"]);
+      console.log("Stored filename in localStorage:", response.data["3d_results"]);
       alert("Images uploaded successfully!");
       navigate("/success");
     } catch (error) {

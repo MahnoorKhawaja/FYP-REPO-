@@ -1,34 +1,74 @@
-import React, { useMemo, useRef, useEffect } from "react";
+import React, { useMemo, useEffect, useState,  useCallback } from "react";
 import { Canvas, useLoader, useThree } from "@react-three/fiber";
 import { OrbitControls } from "three-stdlib";
 import * as THREE from "three";
 import { OBJLoader } from "three-stdlib";
+import { Billboard, Html } from "@react-three/drei";
 
-// --- Custom Controls (to mimic Debug rotation) ---
+/* =========================================
+   LANDMARK INDICES (Replaced Positions)
+   Note: These are arbitrary vertex indices. 
+   You must match these to your specific .obj topology.
+========================================= */
+
+const LANDMARK_INDICES = [
+  { name: "Point 1",  vertexIndex: 47800 },
+  { name: "Point 2",  vertexIndex: 48700 },
+  { name: "Point 3",  vertexIndex: 48600 },
+  { name: "Point 4",  vertexIndex: 39900 },
+  { name: "Point 5",  vertexIndex: 48750 },
+  { name: "Point 6",  vertexIndex: 59800 },
+  { name: "Point 7",  vertexIndex: 48300 },
+  { name: "Point 8",  vertexIndex: 40100 },
+  { name: "Point 9",  vertexIndex: 37300 },
+  { name: "Point 10", vertexIndex: 60810 },
+  { name: "Point 11", vertexIndex: 60740 },
+];
+
+/* =========================================
+   FEATURE INDICES (Replaced Centers)
+========================================= */
+
+const FEATURE_INDICES = [
+  { name: "Dorsum",        vertexIndex: 48600 , score: 1 },
+  { name: "Width of Dorsum",     vertexIndex: 48600 , score: 1  },
+  { name: "Tip Shape and Symmetry",  vertexIndex: 48700 , score: 1  },
+  { name: "Saddle", vertexIndex: 47300 , score: 1  },
+  { name: "Hump",       vertexIndex: 48600 , score: 1  },
+  { name: "Nasal Length",      vertexIndex: 48600, score: 1  },
+  { name: "Radix",        vertexIndex: 48600 , score: 1 },
+  { name: "Alar Columellar Relation",        vertexIndex: 48600 , score: 1 },
+  { name: "Tip Projection",             vertexIndex: 48600 , score: 1 },
+  { name: "Tip Rotation",         vertexIndex: 48600 , score: 1 },
+  { name: "Alar Flaring",         vertexIndex: 48600 , score: 1 },
+  { name: "Nostril Ratio",        vertexIndex: 48600 , score: 1 }
+];
+
+
+/* =========================================
+   CONTROLS
+========================================= */
+
 function HorizontalControls() {
   const { camera, gl } = useThree();
-  const controlsRef = useRef();
 
   useEffect(() => {
     const controls = new OrbitControls(camera, gl.domElement);
+
     controls.enableDamping = true;
     controls.dampingFactor = 0.08;
     controls.enableZoom = false;
     controls.enablePan = false;
 
-    // 🧭 Allow only horizontal rotation
+    // Horizontal only
     controls.minPolarAngle = Math.PI / 2;
     controls.maxPolarAngle = Math.PI / 2;
-
-    // 🧠 Start slightly above center
-    controls.target.set(0, 0, 0);
-
-    controlsRef.current = controls;
 
     const animate = () => {
       requestAnimationFrame(animate);
       controls.update();
     };
+
     animate();
 
     return () => controls.dispose();
@@ -37,88 +77,307 @@ function HorizontalControls() {
   return null;
 }
 
-// --- Model Component ---
-function VertexColorModel({ objUrl, flipFront = false, rotateY = 0 }) {
-  const obj = useLoader(OBJLoader, objUrl);
 
-  useMemo(() => {
-    obj.traverse((child) => {
-      if (child.isMesh) {
-        const geometry = child.geometry;
+/* =========================================
+   LANDMARK DOTS
+========================================= */
 
-        // --- Detect and convert per-vertex RGB colors ---
-        const positionAttr = geometry.attributes.position;
-        const vertexData = positionAttr.array;
-        const stride = vertexData.length / positionAttr.count;
+function Landmarks({ points }) {
+  if (!points || points.length === 0) return null;
 
-        if (stride >= 6) {
-          const colors = [];
-          for (let i = 0; i < vertexData.length; i += stride) {
-            const r = Math.min(vertexData[i + 3] * 1.3, 1.0);
-            const g = Math.min(vertexData[i + 4] * 1.3, 1.0);
-            const b = Math.min(vertexData[i + 5] * 1.3, 1.0);
-            colors.push(r, g, b);
-          }
-          geometry.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+  return points.map((p, i) => (
+    <mesh key={i} position={p.position}>
+     <sphereGeometry args={[0.02, 16, 16]} />
+      <meshStandardMaterial
+        color="red"
+        emissive="red"
+        emissiveIntensity={2}
+      />
+    </mesh>
+  ));
+}
+
+
+/* =========================================
+   FEATURE HIGHLIGHT
+========================================= */
+
+function FeatureLabel({ position, name, score }) {
+  return (
+    <Billboard position={position} scale={0.05}>
+  <Html
+    center
+    transform
+    distanceFactor={12}
+    style={{ pointerEvents: "none" }}
+  >
+
+        <div
+          style={{
+            background: "white",
+            padding: "10px 14px",
+            borderRadius: "14px",
+            boxShadow: "0 8px 25px rgba(0,0,0,0.15)",
+            border: "1px solid #e5e7eb",
+            fontSize: "20px",
+            minWidth: "100px",
+            textAlign: "center"
+          }}
+        >
+          <div
+            style={{
+              fontWeight: "700",
+              marginBottom: "1px"
+            }}
+          >
+            {name}
+          </div>
+          
+        </div>
+        <div
+          style={{
+            width: 0,
+            height: 0,
+            borderLeft: "8px solid transparent",
+            borderRight: "8px solid transparent",
+            borderTop: "10px solid white",
+            margin: "0 auto",
+          }}
+        />
+      </Html>
+    </Billboard>
+  );
+}
+
+
+
+/* =========================================
+   OBJ MODEL & CALCULATION LOGIC
+========================================= */
+
+function VertexColorModel({ 
+  objUrl, 
+  flipFront = false, 
+  rotateY = 0, 
+  onCalculated 
+}) {
+  const rawObj = useLoader(OBJLoader, objUrl);
+
+// Make the loaded OBJ stable
+  const obj = useMemo(() => rawObj, [rawObj]);
+
+
+  // Helper to extract a world position from a vertex index given the object transformations
+ const getVertexWorldPosition = (mesh, index) => {
+  const geometry = mesh.geometry;
+  const pos = geometry.attributes.position;
+
+  if (index >= pos.count) return [0, 0, 0];
+
+  const v = new THREE.Vector3(
+    pos.getX(index),
+    pos.getY(index),
+    pos.getZ(index)
+  );
+  console.log(`Vertex ${index} local position:`, v.toArray());
+
+  mesh.localToWorld(v);
+  return v.toArray();
+};
+
+// Make callback stable
+const stableOnCalculated = useCallback(onCalculated, []);
+
+useEffect(() => {
+  let meshFound = null;
+
+  obj.traverse((child) => {
+    if (child.isMesh) {
+      meshFound = child;
+      const geometry = child.geometry;
+
+      const positionAttr = geometry.attributes.position;
+      const vertexData = positionAttr.array;
+      const stride = vertexData.length / positionAttr.count;
+
+      if (stride >= 6) {
+        const colors = [];
+        for (let i = 0; i < vertexData.length; i += stride) {
+          colors.push(
+            Math.min(vertexData[i + 3] * 1.3, 1.0),
+            Math.min(vertexData[i + 4] * 1.1, 1.0),
+            Math.min(vertexData[i + 5] * 1.3, 1.0)
+          );
         }
-
-        geometry.computeVertexNormals();
-
-        child.material = new THREE.MeshLambertMaterial({
-          vertexColors: true,
-          side: THREE.DoubleSide,
-        });
+        geometry.setAttribute(
+          "color",
+          new THREE.Float32BufferAttribute(colors, 3)
+        );
       }
-    });
 
-    // --- Normalize and center ---
-    const box = new THREE.Box3().setFromObject(obj);
-    const center = box.getCenter(new THREE.Vector3());
-    const size = box.getSize(new THREE.Vector3()).length();
-    obj.position.sub(center);
-    obj.scale.multiplyScalar(1.8 / size);
+      geometry.computeVertexNormals();
+      child.material = new THREE.MeshLambertMaterial({
+        vertexColors: true,
+        side: THREE.DoubleSide
+      });
+    }
+  });
 
-    // --- Upright fix ---
-    obj.rotation.x = 0; // no tilt
-    obj.rotation.y = rotateY;
-    if (flipFront) obj.rotation.y += Math.PI;
-  }, [obj, flipFront, rotateY]);
+  const box = new THREE.Box3().setFromObject(obj);
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3()).length();
+  const scaleFactor = 1.8 / size;
+
+  obj.position.sub(center);
+  obj.scale.multiplyScalar(scaleFactor);
+
+  let finalRotation = rotateY;
+  if (flipFront) finalRotation += Math.PI;
+
+  obj.rotation.set(0, finalRotation, 0);
+
+  if (meshFound && stableOnCalculated) {
+    const geometry = meshFound.geometry;
+
+    const calcLandmarks = LANDMARK_INDICES.map(lm => ({
+      name: lm.name,
+      position: getVertexWorldPosition(meshFound, lm.vertexIndex)
+    }));
+
+    const calcFeatures = FEATURE_INDICES.map(ft => ({
+      name: ft.name,
+      center: getVertexWorldPosition(meshFound, ft.vertexIndex),
+      score: ft.score
+    }));
+
+    stableOnCalculated({ landmarks: calcLandmarks, features: calcFeatures });
+    console.log("Calculated landmarks and features sent.", calcLandmarks, calcFeatures);
+  }
+}, [obj, flipFront, rotateY, stableOnCalculated]); // now stable
 
   return <primitive object={obj} />;
 }
 
-// --- Main Viewer Component ---
+
+/* =========================================
+   MAIN COMPONENT
+========================================= */
+
 export default function ThreeD_VertexColorViewer() {
-  const filename = localStorage.getItem("resultFilename");
-  const newFilename = filename.replace(".obj", "_obj.obj");
-  const url = `/results/${newFilename}`;
+  let filename = localStorage.getItem("resultFilename");
+  filename = filename.replace(".obj", "_obj.obj");
+  // let filename = "a2ad9056bc7a46d2968a66669ebbfb07_obj.obj"; //for testing 
+  const url = `/results/${filename}`;
+
+  const [showLandmarks, setShowLandmarks] = useState(false);
+  const [showFeatures, setShowFeatures] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState(null);
+
+  // State to hold the calculated [x,y,z] positions derived from vertex indices
+  const [calculatedLandmarks, setCalculatedLandmarks] = useState([]);
+  const [calculatedFeatures, setCalculatedFeatures] = useState([]);
+
+  const handleCalculatedPositions = ({ landmarks, features }) => {
+    setCalculatedLandmarks(landmarks);
+    setCalculatedFeatures(features);
+  };
+
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-gray-100 to-gray-300 flex flex-col items-center justify-center">
       <h1 className="text-3xl font-semibold mb-4 text-gray-700 tracking-tight">
-        3D Vertex Color Viewer (.OBJ)
+        3D Face Viewer
       </h1>
+
+      {/* BUTTONS */}
+      <div className="flex gap-4 mb-4 z-20">
+        <button
+          onClick={() => {
+            setShowLandmarks(!showLandmarks);
+            setShowFeatures(false);
+            setSelectedFeature(null);
+          }}
+         className="relative bg-[linear-gradient(#262626,#262626),linear-gradient(#3b82f6,#3b82f6)] bg-[length:100%_2px,0_2px] bg-[position:100%_100%,0_100%] bg-no-repeat text-neutral-950 text-xl transition-[background-size] duration-300 hover:bg-[0_2px,100%_2px]"
+
+        >
+          Landmarks
+        </button>
+
+        <button
+          onClick={() => {
+            setShowFeatures(!showFeatures);
+            setShowLandmarks(false);
+            setSelectedFeature(null);
+          }}
+          className="relative bg-[linear-gradient(#262626,#262626),linear-gradient(#3b82f6,#3b82f6)] bg-[length:100%_2px,0_2px] bg-[position:100%_100%,0_100%] bg-no-repeat text-neutral-950 text-xl transition-[background-size] duration-300 hover:bg-[0_2px,100%_2px]"
+        >
+          Features
+        </button>
+      </div>
 
       <div
         className="relative rounded-2xl shadow-2xl border border-gray-300 overflow-hidden"
         style={{
           width: "90vw",
           height: "85vh",
-          background: "radial-gradient(circle at center, #fafafa, #e5e5e5)",
+          background: "radial-gradient(circle at center, #fafafa, #e5e5e5)"
         }}
       >
+        {/* FEATURE SIDEBAR */}
+        {showFeatures && (
+            <div
+            className="absolute left-5 top-5
+            bg-gradient-to-br from-white/90 via-blue-50/70 to-white/60
+            p-6 rounded-2xl
+            shadow-[0_15px_40px_rgba(0,0,0,0.2)]
+            w-96 space-y-3 z-20
+            overflow-y-auto max-h-[80vh]
+            border border-white/70"
+            >
+            <h2 className="font-bold text-lg mb-2">Facial Features</h2>
+
+            {calculatedFeatures.map((f, i) => (
+              <button
+                key={i}
+                onClick={() => setSelectedFeature(f)}
+                className={`block w-full text-left px-3 py-2 rounded-lg transition
+                  ${selectedFeature?.name === f.name ? "bg-blue-200" : "hover:bg-blue-100"}`}
+              >
+                <div className="flex justify-between items-center">
+                  <span>{f.name}</span>
+                  <span className="text-sm text-gray-600 font-semibold">{f.score}%</span>
+                </div>
+              </button>
+            ))}
+
+          </div>
+        )}
+
+        {/* 3D CANVAS */}
         <Canvas
           camera={{ position: [0, 0, 2.8], fov: 45 }}
           gl={{ antialias: true, outputEncoding: THREE.sRGBEncoding }}
         >
-          {/* ✅ Lighting for Lambert material */}
           <ambientLight intensity={0.6} />
           <directionalLight position={[1.5, 2, 3]} intensity={1.6} />
           <pointLight position={[-2, -1, 3]} intensity={1.2} />
 
-          {/* 👇 Model */}
-          <VertexColorModel objUrl={url} rotateY={Math.PI / 2} />
+          <VertexColorModel 
+            objUrl={url} 
+            rotateY={Math.PI / 2} 
+            onCalculated={handleCalculatedPositions}
+          />
 
-          {/* 👇 Horizontal orbit controls (like debug viewer) */}
+          {showLandmarks && <Landmarks points={calculatedLandmarks} />}
+          
+          {selectedFeature && (
+          <FeatureLabel
+            position={selectedFeature.center}
+            name={selectedFeature.name}
+            score={selectedFeature.score}
+          />
+        )}
+
+
           <HorizontalControls />
         </Canvas>
       </div>
