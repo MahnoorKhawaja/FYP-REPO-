@@ -14,6 +14,8 @@ import About from "./pages/About";
 import Careers from "./pages/Careers";
 import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
+import UseCases from "./pages/UseCases";
+
 
 function App() {
   return (
@@ -34,6 +36,8 @@ function App() {
         <Route path="/career" element={<Careers />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/usecases" element={<UseCases />} />
+
 
         {/* Protected routes */}
         <Route
