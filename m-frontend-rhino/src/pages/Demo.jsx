@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { UploadCloud, Cpu, Play } from "lucide-react";
 import { gsap } from "gsap";
-{/*there is a problem with this page regarding a blue overlay right now working onn fixing it */}
+import { Cpu, Play, UploadCloud } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 const UsecaseBadge = ({ icon: Icon, title }) => (
   <div className="inline-flex items-center gap-3 px-4 py-2 bg-slate-800/50 border border-slate-700 rounded-full">
@@ -24,8 +23,23 @@ const Demo = () => {
   const [showViewer, setShowViewer] = useState(false);
 
   useEffect(() => {
+    // Kill any existing GSAP animations on these elements first
+    gsap.killTweensOf(".demo-header");
+    gsap.killTweensOf(".demo-grid");
+    
+    // Set initial state to visible (prevents flash)
+    gsap.set(".demo-header", { opacity: 1, y: 0 });
+    gsap.set(".demo-grid", { opacity: 1, y: 0 });
+    
+    // Then animate
     gsap.from(".demo-header", { y: -20, opacity: 0, duration: 0.6 });
     gsap.from(".demo-grid", { y: 20, opacity: 0, duration: 0.6, delay: 0.15, stagger: 0.08 });
+    
+    // Cleanup on unmount
+    return () => {
+      gsap.killTweensOf(".demo-header");
+      gsap.killTweensOf(".demo-grid");
+    };
   }, []);
 
   useEffect(() => {
