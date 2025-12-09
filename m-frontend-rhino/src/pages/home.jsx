@@ -1,20 +1,16 @@
-import { Play, ArrowRight, BarChart3, Shield, Zap, Calendar, Phone } from 'lucide-react';
-import { useRef, useState, useEffect } from 'react';
-import { Brain, Cpu, Database, LineChart, Factory, Utensils, Heart, Car, Building,  Microscope, Cloud, Lock, Sparkles, Target, Users, Globe } from 'lucide-react';
+import { useClerk } from "@clerk/clerk-react";
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ArrowRight, Brain, Cloud, Cpu, Database, Globe, Lock, Sparkles, Target, Users, Zap } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
-import { useClerk } from "@clerk/clerk-react"
 // Register ScrollTrigger plugin
 if (typeof window !== 'undefined') {
   gsap.registerPlugin(ScrollTrigger);
 }
 
 // Import video files
-import heroVideo from '../assets/v1.mp4';
-import techVideo from '../assets/v1.mp4';
-import dataVideo from '../assets/v1.mp4';
+import { default as dataVideo, default as heroVideo, default as techVideo } from '../assets/v1.mp4';
 
 
 const techStack = [
@@ -191,6 +187,11 @@ const Home = () => {
         scrub: true
       }
     });
+
+    return () => {
+      ScrollTrigger.getAll().forEach(trigger => trigger.kill());
+      gsap.killTweensOf("*");
+    };
 
   }, []);
 
