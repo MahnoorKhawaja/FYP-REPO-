@@ -6,7 +6,9 @@ import Home from "./pages/home";
 import Footer from "./component/footer";
 import RhinoplastyPage from "./pages/RhinoplastyPage";
 import PreOperationPage from "./pages/preoperation";
+import ComparisonUploadPage from "./pages/postoperation";
 import ThreeD_VertexColorViewer from "./pages/ThreeD_Viewer";
+import ThreeD_PrePostComparison from "./pages/comparison";
 import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
 import Demo from "./pages/Demo";
@@ -65,11 +67,40 @@ function App() {
         />
 
         <Route
+        path="/postoperation"
+        element={
+        <>
+        <SignedIn>
+        <ComparisonUploadPage />
+        </SignedIn>
+        <SignedOut>
+        <RedirectToSignIn />
+        </SignedOut>
+        </>
+        }
+        />
+
+        <Route
         path="/success"
         element={
         <>
         <SignedIn>
         <ThreeD_VertexColorViewer />
+        </SignedIn>
+        <SignedOut>
+        <RedirectToSignIn />
+        </SignedOut>
+        </>
+        }
+        />
+        
+
+        <Route
+        path="/comparison"
+        element={
+        <>
+        <SignedIn>
+        <ThreeD_PrePostComparison />
         </SignedIn>
         <SignedOut>
         <RedirectToSignIn />

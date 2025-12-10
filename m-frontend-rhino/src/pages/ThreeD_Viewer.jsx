@@ -1,4 +1,5 @@
 import React, { useMemo, useEffect, useState,  useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { Canvas, useLoader, useThree } from "@react-three/fiber";
 import { OrbitControls } from "three-stdlib";
 import * as THREE from "three";
@@ -26,24 +27,38 @@ const LANDMARK_INDICES = [
 ];
 
 /* =========================================
-   FEATURE INDICES (Replaced Centers)
+   FEATURE INDICES 
 ========================================= */
 
-const FEATURE_INDICES = [
-  { name: "Dorsum",        vertexIndex: 48600 , score: 1 },
-  { name: "Width of Dorsum",     vertexIndex: 48600 , score: 1  },
-  { name: "Tip Shape and Symmetry",  vertexIndex: 48700 , score: 1  },
-  { name: "Saddle", vertexIndex: 47300 , score: 1  },
-  { name: "Hump",       vertexIndex: 48600 , score: 1  },
-  { name: "Nasal Length",      vertexIndex: 48600, score: 1  },
-  { name: "Radix",        vertexIndex: 48600 , score: 1 },
-  { name: "Alar Columellar Relation",        vertexIndex: 48600 , score: 1 },
-  { name: "Tip Projection",             vertexIndex: 48600 , score: 1 },
-  { name: "Tip Rotation",         vertexIndex: 48600 , score: 1 },
-  { name: "Alar Flaring",         vertexIndex: 48600 , score: 1 },
-  { name: "Nostril Ratio",        vertexIndex: 48600 , score: 1 }
+const FEATURE_INDICES_TEMP = [
+  { name: "Dorsum", vertexIndex: 48550, score: 1, radius:0.3, scaleX: 0.3, scaleY: 0.4 ,scaleZ:0.3},
+  { name: "Width of Dorsum", vertexIndex: 48560 , score: 1 , radius:0.3, scaleX: 0.3, scaleY: 0.3 ,scaleZ:0.5},
+  { name: "Tip Shape and Symmetry", vertexIndex: 48600 , score: 1 ,radius:0.25, scaleX: 0.25, scaleY: 0.25 ,scaleZ:0.25},
+  { name: "Saddle", vertexIndex: 48470 , score: 1 , radius:0.3, scaleX: 0.3, scaleY: 0.4 ,scaleZ:0.3},
+  { name: "Hump", vertexIndex: 48550 , score: 1 ,radius:0.25, scaleX: 0.25, scaleY: 0.3 ,scaleZ:0.25}, 
+  { name: "Nasal Length", vertexIndex: 48550, score: 1 , radius:0.4, scaleX: 0.3, scaleY: 0.7 ,scaleZ:0.3},
+  { name: "Radix", vertexIndex: 48470 , score: 1 , radius:0.25, scaleX: 0.25, scaleY: 0.25 ,scaleZ:0.25},
+  { name: "Alar Columellar Relation", vertexIndex: 48650 , score: 1 ,radius:0.28, scaleX: 0.25, scaleY: 0.25 ,scaleZ:0.3},
+  { name: "Tip Projection", vertexIndex: 48600 , score: 1 ,radius:0.25, scaleX: 0.3, scaleY: 0.25 ,scaleZ:0.3 }, 
+  { name: "Tip Rotation", vertexIndex: 48600 , score: 1 ,radius:0.25, scaleX: 0.25, scaleY: 0.25 ,scaleZ:0.25 },
+  { name: "Alar Flaring", vertexIndex: 48650 , score: 1 ,radius:0.25, scaleX: 0.25, scaleY: 0.25 ,scaleZ:0.3 }, 
+  { name: "Nostril Ratio", vertexIndex: 48550, score: 1 , radius:0.4, scaleX: 0.3, scaleY: 0.6 ,scaleZ:0.3}
 ];
 
+
+/* =========================================
+   Load scores from localStorage
+========================================= */
+
+// Retrieve scores from localStorage
+const savedScores = JSON.parse(localStorage.getItem("noseScores")) || [];
+console.log("Retrieved nose scores from localStorage:", savedScores);
+
+// Map FEATURE_INDICES and update the score
+const FEATURE_INDICES = FEATURE_INDICES_TEMP.map((ft, idx) => ({
+  ...ft,
+  score: savedScores[idx] ?? ft.score,  // fallback to existing score if undefined
+}));
 
 /* =========================================
    CONTROLS
@@ -83,19 +98,47 @@ function HorizontalControls() {
 ========================================= */
 
 function Landmarks({ points }) {
+  const [hovered, setHovered] = useState(null);
+
   if (!points || points.length === 0) return null;
 
   return points.map((p, i) => (
-    <mesh key={i} position={p.position}>
-     <sphereGeometry args={[0.02, 16, 16]} />
+    <mesh
+      key={i}
+      position={p.position}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        setHovered(i);
+      }}
+      onPointerOut={() => setHovered(null)}
+    >
+      <sphereGeometry args={[0.02, 16, 16]} />
       <meshStandardMaterial
-        color="red"
-        emissive="red"
-        emissiveIntensity={2}
+        color={hovered === i ? "yellow" : "red"}
+        emissive={hovered === i ? "yellow" : "red"}
+        emissiveIntensity={hovered === i ? 4 : 2}
       />
+
+      {hovered === i && (
+  <Html
+    distanceFactor={10}
+    style={{
+      background: "white",
+      padding: "2px 4px",      // smaller box
+      borderRadius: "4px",
+      fontSize: "4px",         // smaller text
+      fontWeight: "bold",
+      whiteSpace: "nowrap",
+      boxShadow: "0px 1px 3px rgba(0,0,0,0.25)", // lighter shadow
+    }}
+  >
+    {p.name}
+  </Html>
+)}
     </mesh>
   ));
 }
+
 
 
 /* =========================================
@@ -148,6 +191,23 @@ function FeatureLabel({ position, name, score }) {
     </Billboard>
   );
 }
+function HighlightSphere({ position, radius = 0.15, scaleX = 2, scaleY = 1.5, scaleZ = 1 }) {
+  if (!position) return null;
+
+  return (
+    <mesh position={position} scale={[scaleX, scaleY, scaleZ]}>
+      <sphereGeometry args={[radius, 32, 32]} />
+      <meshStandardMaterial
+        color="#60a5fa"
+        transparent
+        opacity={0.25}
+        roughness={0.2}
+        metalness={0.1}
+      />
+    </mesh>
+  );
+}
+
 
 
 
@@ -245,10 +305,14 @@ useEffect(() => {
     }));
 
     const calcFeatures = FEATURE_INDICES.map(ft => ({
-      name: ft.name,
-      center: getVertexWorldPosition(meshFound, ft.vertexIndex),
-      score: ft.score
-    }));
+  name: ft.name,
+  center: getVertexWorldPosition(meshFound, ft.vertexIndex),
+  score: ft.score,
+  radius: ft.radius ?? 0.15,   // fallback if undefined
+  scaleX: ft.scaleX ?? 1,
+  scaleY: ft.scaleY ?? 1,
+  scaleZ: ft.scaleZ ?? 1
+}));
 
     stableOnCalculated({ landmarks: calcLandmarks, features: calcFeatures });
     console.log("Calculated landmarks and features sent.", calcLandmarks, calcFeatures);
@@ -264,9 +328,10 @@ useEffect(() => {
 ========================================= */
 
 export default function ThreeD_VertexColorViewer() {
+  const navigate = useNavigate();
   let filename = localStorage.getItem("resultFilename");
   filename = filename.replace(".obj", "_obj.obj");
-  // let filename = "a2ad9056bc7a46d2968a66669ebbfb07_obj.obj"; //for testing 
+  //let filename = "a2ad9056bc7a46d2968a66669ebbfb07_obj.obj"; //for testing 
   const url = `/results/${filename}`;
 
   const [showLandmarks, setShowLandmarks] = useState(false);
@@ -312,6 +377,14 @@ export default function ThreeD_VertexColorViewer() {
         >
           Features
         </button>
+
+        <button
+  onClick={() => navigate("/rhinoplasty")}
+   className="relative bg-[linear-gradient(#262626,#262626),linear-gradient(#3b82f6,#3b82f6)] bg-[length:100%_2px,0_2px] bg-[position:100%_100%,0_100%] bg-no-repeat text-neutral-950 text-xl transition-[background-size] duration-300 hover:bg-[0_2px,100%_2px]"
+>
+         Back to Analysis
+</button>
+
       </div>
 
       <div
@@ -344,13 +417,37 @@ export default function ThreeD_VertexColorViewer() {
               >
                 <div className="flex justify-between items-center">
                   <span>{f.name}</span>
-                  <span className="text-sm text-gray-600 font-semibold">{f.score}%</span>
+                  <span className="text-sm text-gray-600 font-semibold">{f.score}</span>
                 </div>
               </button>
             ))}
 
           </div>
         )}
+
+        {/* RIGHT-SIDE SCORE PANEL */}
+{showFeatures && (
+  <div
+    className="absolute right-5 top-5
+      bg-gradient-to-br from-white/90 via-blue-50/70 to-white/60
+      p-6 rounded-2xl
+      shadow-[0_15px_40px_rgba(0,0,0,0.2)]
+      w-80 space-y-4 z-20
+      border border-white/70"
+  >
+    <h2 className="font-bold text-lg mb-2">Total Score</h2>
+
+  <div className="text-2xl font-bold text-blue-600">
+  {/* Sum of all feature scores out of 48 */}
+  {calculatedFeatures.reduce((sum, f) => sum + f.score, 0).toFixed(1)} / 48
+</div>
+
+    <p className="text-sm text-gray-700">
+      This score represents the combined evaluation of all 12 nasal features. Higher scores indicate better symmetry, proportion, and aesthetic alignment of the nose according to the model’s assessment.
+    </p>
+  </div>
+)}
+
 
         {/* 3D CANVAS */}
         <Canvas
@@ -370,12 +467,25 @@ export default function ThreeD_VertexColorViewer() {
           {showLandmarks && <Landmarks points={calculatedLandmarks} />}
           
           {selectedFeature && (
-          <FeatureLabel
-            position={selectedFeature.center}
-            name={selectedFeature.name}
-            score={selectedFeature.score}
-          />
-        )}
+  <>
+    <FeatureLabel
+      position={selectedFeature.center}
+      name={selectedFeature.name}
+      score={selectedFeature.score}
+    />
+
+    <HighlightSphere
+  position={selectedFeature.center}
+  radius={selectedFeature.radius}
+  scaleX={selectedFeature.scaleX}
+  scaleY={selectedFeature.scaleY}
+  scaleZ={selectedFeature.scaleZ}
+/>
+
+
+  </>
+)}
+
 
 
           <HorizontalControls />
@@ -383,4 +493,4 @@ export default function ThreeD_VertexColorViewer() {
       </div>
     </div>
   );
-}
+} 
