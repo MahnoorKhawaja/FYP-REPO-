@@ -6,7 +6,9 @@ import Home from "./pages/home";
 import Footer from "./component/footer";
 import RhinoplastyPage from "./pages/RhinoplastyPage";
 import PreOperationPage from "./pages/preoperation";
+import ComparisonUploadPage from "./pages/postoperation";
 import ThreeD_VertexColorViewer from "./pages/ThreeD_Viewer";
+import ThreeD_PrePostComparison from "./pages/comparison";
 import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
 import Demo from "./pages/Demo";
@@ -14,6 +16,8 @@ import About from "./pages/About";
 import Careers from "./pages/Careers";
 import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
+import UseCases from "./pages/UseCases";
+
 
 function App() {
   return (
@@ -34,6 +38,8 @@ function App() {
         <Route path="/career" element={<Careers />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/usecases" element={<UseCases />} />
+
 
         {/* Protected routes */}
         <Route
@@ -63,6 +69,19 @@ function App() {
             </>
           }
         />
+        <Route
+          path="/postoperation"
+          element={
+            <>
+              <SignedIn>
+                <ComparisonUploadPage />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
+        />
 
         <Route
           path="/success"
@@ -76,6 +95,21 @@ function App() {
               </SignedOut>
             </>
           }
+        />
+        
+
+        <Route
+        path="/comparison"
+        element={
+        <>
+        <SignedIn>
+        <ThreeD_PrePostComparison />
+        </SignedIn>
+        <SignedOut>
+        <RedirectToSignIn />
+        </SignedOut>
+        </>
+        }
         />
 
         {/* Safety fallback */}

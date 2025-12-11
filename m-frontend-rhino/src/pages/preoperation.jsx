@@ -50,6 +50,8 @@ export default function PreOperationPage() {
 
       console.log("Upload successful:", response.data);
       localStorage.setItem("resultFilename", response.data["3d_results"]);
+      localStorage.setItem("noseScores", JSON.stringify(response.data["nose_scores"]));
+      console.log("Stored filename in localStorage:", response.data["3d_results"]);
       alert("Images uploaded successfully!");
       navigate("/success");
     } catch (error) {
@@ -67,8 +69,8 @@ export default function PreOperationPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-6xl">
         {[
           { label: "Front View", key: "front" },
-          { label: "Left Profile View", key: "left" },
-          { label: "Right Profile View", key: "right" },
+          { label: "Left Profile", key: "left" },
+          { label: "Right Profile", key: "right" },
           { label: "Basal View", key: "basal" },
         ].map(({ label, key }) => (
           <div

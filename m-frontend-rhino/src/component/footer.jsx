@@ -1,10 +1,12 @@
 import { Beaker, Twitter, Linkedin, Github } from 'lucide-react';
+import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
     <footer className="text-white bg-gray-900">
       <div className="px-4 py-12 mx-auto max-w-7xl sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+          
           {/* Company Info */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center">
@@ -26,10 +28,12 @@ const Footer = () => {
               Product
             </h3>
             <ul className="mt-4 space-y-2">
-              <li><a href="#features" className="text-gray-300 hover:text-white">Features</a></li>
-              <li><a href="#use-cases" className="text-gray-300 hover:text-white">Use Cases</a></li>
-              <li><a href="#pricing" className="text-gray-300 hover:text-white">Pricing</a></li>
-              <li><a href="#demo" className="text-gray-300 hover:text-white">Demo</a></li>
+
+              <li><Link to="/features" className="text-gray-300 hover:text-white">Features</Link></li>
+              <li><Link to="/usecases" className="text-gray-300 hover:text-white">Documentation</Link></li>
+              <li><Link to="/pricing" className="text-gray-300 hover:text-white">Pricing</Link></li>
+              <li><Link to="/demo" className="text-gray-300 hover:text-white">Demo</Link></li>
+
             </ul>
           </div>
 
@@ -39,12 +43,15 @@ const Footer = () => {
               Company
             </h3>
             <ul className="mt-4 space-y-2">
-              <li><a href="#about" className="text-gray-300 hover:text-white">About</a></li>
-              <li><a href="#careers" className="text-gray-300 hover:text-white">Careers</a></li>
-              <li><a href="#contact" className="text-gray-300 hover:text-white">Contact</a></li>
-              <li><a href="#privacy" className="text-gray-300 hover:text-white">Privacy</a></li>
+
+              <li><Link to="/about" className="text-gray-300 hover:text-white">About</Link></li>
+              <li><Link to="/career" className="text-gray-300 hover:text-white">Careers</Link></li>
+              <li><Link to="/contact" className="text-gray-300 hover:text-white">Contact</Link></li>
+              <li><Link to="/privacy" className="text-gray-300 hover:text-white">Privacy</Link></li>
+
             </ul>
           </div>
+
         </div>
 
         <div className="pt-8 mt-12 text-center text-gray-400 border-t border-gray-800">
