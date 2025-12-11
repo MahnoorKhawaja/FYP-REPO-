@@ -43,59 +43,58 @@ function App() {
 
         {/* Protected routes */}
         <Route
-        path="/rhinoplasty"
-        element={
-        <>
-        <SignedIn>
-        <RhinoplastyPage />
-        </SignedIn>
-        <SignedOut>
-        <RedirectToSignIn />
-        </SignedOut>
-        </>
-        }
+          path="/rhinoplasty"
+          element={
+            <>
+              <SignedIn>
+                <RhinoplastyPage />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
         />
 
         <Route
-        path="/preoperation"
-        element={
-        <>
-        <SignedIn>
-        <PreOperationPage />
-        </SignedIn>
-        <SignedOut>
-        <RedirectToSignIn />
-        </SignedOut>
-        </>
-        }
+          path="/preoperation"
+          element={
+            <>
+              <SignedIn>
+                <PreOperationPage />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
+        />
+        <Route
+          path="/postoperation"
+          element={
+            <>
+              <SignedIn>
+                <ComparisonUploadPage />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
         />
 
         <Route
-        path="/postoperation"
-        element={
-        <>
-        <SignedIn>
-        <ComparisonUploadPage />
-        </SignedIn>
-        <SignedOut>
-        <RedirectToSignIn />
-        </SignedOut>
-        </>
-        }
-        />
-
-        <Route
-        path="/success"
-        element={
-        <>
-        <SignedIn>
-        <ThreeD_VertexColorViewer />
-        </SignedIn>
-        <SignedOut>
-        <RedirectToSignIn />
-        </SignedOut>
-        </>
-        }
+          path="/success"
+          element={
+            <>
+              <SignedIn>
+                <ThreeD_VertexColorViewer />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
         />
         
 

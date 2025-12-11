@@ -1,4 +1,10 @@
 import { Upload, Zap, BarChart3, ArrowRight, Eye } from 'lucide-react';
+import frontImg from '../assets/front.png';
+import leftImg from '../assets/left.png';
+import rightImg from '../assets/right.png';
+import basalImg from '../assets/basal.png';
+import modelImg from '../assets/model.jpg';
+
 
 function FeatureCard({ icon: Icon, title, description, details }) {
   return (
@@ -28,26 +34,10 @@ function FeatureCard({ icon: Icon, title, description, details }) {
 
 function ViewGrid() {
   const views = [
-    { 
-      name: 'Front View', 
-      desc: 'Direct frontal perspective',
-      imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop'
-    },
-    { 
-      name: 'Left Profile', 
-      desc: 'Left lateral perspective',
-      imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop'
-    },
-    { 
-      name: 'Right Profile', 
-      desc: 'Right lateral perspective',
-      imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&flip=h'
-    },
-    { 
-      name: 'Basal View', 
-      desc: 'Bottom nasal perspective',
-      imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop'
-    },
+    { name: 'Front View', desc: 'Direct frontal perspective', imageUrl: frontImg },
+    { name: 'Left Profile', desc: 'Left lateral perspective', imageUrl: leftImg },
+    { name: 'Right Profile', desc: 'Right lateral perspective', imageUrl: rightImg },
+    { name: 'Basal View', desc: 'Bottom nasal perspective', imageUrl: basalImg },
   ];
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -186,11 +176,11 @@ const Features = () => {
                   <p className="mt-3 text-gray-700">
                     From the four uploaded images, the system generates an interactive 3D model of the patient's current nasal anatomy. This model serves as the baseline for surgical planning and post-operative comparison.
                   </p>
-                  <div className="mt-6 w-full h-64 bg-gradient-to-br from-blue-100 to-blue-50 border border-blue-100 rounded-lg flex items-center justify-center overflow-hidden">
+                  <div className="mt-6 w-full h-64 bg-white border border-blue-100 rounded-lg flex items-center justify-center overflow-hidden">
                     <img 
-                      src="https://images.unsplash.com/photo-1576091160550-112173f7f869?w=400&h=300&fit=crop"
+                      src={modelImg}
                       alt="3D Model"
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain bg-white/0"
                       onError={(e) => {
                         e.target.style.display = 'none';
                         e.target.parentElement.innerHTML = '<div className="text-center"><p className="text-gray-500">3D Model Visualization</p></div>';
