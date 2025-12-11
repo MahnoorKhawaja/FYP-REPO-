@@ -32,12 +32,30 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 scaler_mean = np.load(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend/scaler_mean.npy")          # shape: (42,)
 scaler_scale = np.load(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend/scaler_scale.npy") 
 
-class NoseScoreClassifier(nn.Module):
+# =====================================================
+# Frontal view model
+
+# -----------------------------
+# CONFIG
+# -----------------------------
+INPUT_FEATURES2 = 42
+NUM_CLASSES2 = 4
+NUM_TASKS2 = 2   # <---- ONLY TWO OUTPUTS NOW
+
+BATCH_SIZE2 = 16
+EPOCHS2 = 200
+LR2 = 0.001
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+
+
+class NoseScoreClassifier2(nn.Module):
     def __init__(self):
         super().__init__()
 
         self.backbone = nn.Sequential(
-            nn.Linear(INPUT_FEATURES, 64),
+            nn.Linear(INPUT_FEATURES2, 64),
             nn.ReLU(),
             nn.Linear(64, 128),
             nn.ReLU(),
@@ -45,9 +63,57 @@ class NoseScoreClassifier(nn.Module):
             nn.ReLU(),
         )
 
-        # 12 output heads
+        # ONLY TWO HEADS NOW
+        self.heads = nn.ModuleList([nn.Linear(64, NUM_CLASSES2) for _ in range(NUM_TASKS2)])
+
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            nn.init.kaiming_normal_(m.weight)
+            nn.init.zeros_(m.bias)
+
+    def forward(self, x):
+        shared = self.backbone(x)
+        return [head(shared) for head in self.heads]
+    
+front_model = NoseScoreClassifier2()
+front_model.load_state_dict(torch.load(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend/nose_twohead_model.pth", map_location="cpu"))
+front_model.eval()
+
+# =====================================================
+# Lateral view model
+
+# -----------------------------
+# CONFIG
+# -----------------------------
+INPUT_FEATURES3 = 42
+NUM_CLASSES3 = 4
+NUM_TASKS3 = 8   # <---- NOW 8 OUTPUTS
+
+BATCH_SIZE3 = 16
+EPOCHS3 = 200
+LR3 = 0.001
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+
+
+class NoseScoreClassifier3(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.backbone = nn.Sequential(
+            nn.Linear(INPUT_FEATURES3, 64),
+            nn.ReLU(),
+            nn.Linear(64, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+        )
+
+        # ---------- 8 output heads ----------
         self.heads = nn.ModuleList(
-            [nn.Linear(64, NUM_CLASSES) for _ in range(NUM_TASKS)]
+            [nn.Linear(64, NUM_CLASSES3) for _ in range(NUM_TASKS3)]
         )
 
         self.apply(self._init_weights)
@@ -59,16 +125,63 @@ class NoseScoreClassifier(nn.Module):
 
     def forward(self, x):
         shared = self.backbone(x)
+        return [head(shared) for head in self.heads]
+    
+lat_model = NoseScoreClassifier3()
+lat_model.load_state_dict(torch.load(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend/nose_8head_model.pth", map_location="cpu"))
+lat_model.eval()
 
-        outputs = []
-        for head in self.heads:
-            outputs.append(head(shared))
+# =====================================================
+# Basal view model
 
-        return outputs  
+# -----------------------------
+# CONFIG
+# -----------------------------
+INPUT_FEATURES4 = 42        # 7 angles + 5 ratios + 30 landmark coords
+NUM_CLASSES4 = 4            # scores 1–4
+NUM_TASKS4 = 2              # Basal view has 2 output scores
+BATCH_SIZE4 = 16
+EPOCHS4 = 200
+LR4 = 0.001
 
-model = NoseScoreClassifier()
-model.load_state_dict(torch.load(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend/nose_classification_model.pth", map_location="cpu"))
-model.eval()
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# -----------------------------
+# MODEL
+# -----------------------------
+class NoseBasalClassifier(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        # shared backbone
+        self.backbone = nn.Sequential(
+            nn.Linear(INPUT_FEATURES4, 64),
+            nn.ReLU(),
+            nn.Linear(64, 128),
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+        )
+
+        # ---- 2 output heads ----
+        self.heads = nn.ModuleList([
+            nn.Linear(64, NUM_CLASSES4) for _ in range(NUM_TASKS4)
+        ])
+
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            nn.init.kaiming_normal_(m.weight)
+            nn.init.zeros_(m.bias)
+
+    def forward(self, x):
+        shared = self.backbone(x)
+        return [head(shared) for head in self.heads]
+    
+basal_model = NoseBasalClassifier()
+basal_model.load_state_dict(torch.load(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend/nose_basal_model.pth", map_location="cpu"))
+basal_model.eval()
 
 # ---------------------------
 # MediaPipe Setup
@@ -295,21 +408,33 @@ def extract_42_features(img):
 # 3. Full Prediction Pipeline
 # =====================================================
 
-def predict_scores(img):
+def predict_scores(img_front,img_right=None,img_left=None,img_basal=None):
     # Step 1: extract handcrafted features
-    features = extract_42_features(img)
+    features_f = extract_42_features(img_front)
+    features_r = extract_42_features(img_right)
+    features_b = extract_42_features(img_basal)
 
     # Step 2: apply manual scaling
-    features_scaled = (features - scaler_mean) / scaler_scale
+    features_scaled_f = (features_f - scaler_mean) / scaler_scale
+    features_scaled_r = (features_r - scaler_mean) / scaler_scale
+    features_scaled_b = (features_b - scaler_mean) / scaler_scale
 
     # Step 3: convert to tensor
-    x = torch.tensor(features_scaled, dtype=torch.float32).unsqueeze(0)
+    x1 = torch.tensor(features_scaled_f, dtype=torch.float32).unsqueeze(0)
+    x2 = torch.tensor(features_scaled_r, dtype=torch.float32).unsqueeze(0)
+    x3 = torch.tensor(features_scaled_b, dtype=torch.float32).unsqueeze(0)
 
     final_scores = []
 
     # Step 4: predict
     with torch.no_grad():
-        outputs = model(x)  # list of 12 tensors, each (1, 4)
+        outputs_front = front_model(x1) 
+        outputs_lat = lat_model(x1)
+        outputs_basal = basal_model(x3)
+
+        print(outputs_front, outputs_lat, outputs_basal)
+
+        outputs = outputs_front + outputs_lat + outputs_basal  # total 12 outputs
 
         for out in outputs:
             probs = torch.softmax(out, dim=1)   # (1, 4)
@@ -397,7 +522,7 @@ async def upload_images(
     print(saved_files)   
     result = generate_3d_obj(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['front'])
     print(result)
-    scores = predict_scores(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['front'])
+    scores = predict_scores(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['front'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['right'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['left'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['basal'])
     filename = result.split('/')[-1]
     print(filename)
 
@@ -472,9 +597,8 @@ async def upload_comparison(
         # -----------------------------
         # 2️⃣ Predict nose scores
         # -----------------------------
-        pre_scores = predict_scores(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['front'])
-        post_scores = predict_scores(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['post_front'])
-
+        pre_scores = predict_scores(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['front'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['right'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['left'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['basal'])
+        post_scores = predict_scores(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['post_front'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['post_right'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['post_left'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['post_basal'])
         # -----------------------------
         # 3️⃣ Generate 3D OBJ 
         # -----------------------------
@@ -508,3 +632,4 @@ async def upload_comparison(
 
     except Exception as e:
         return {"error": str(e)}
+
