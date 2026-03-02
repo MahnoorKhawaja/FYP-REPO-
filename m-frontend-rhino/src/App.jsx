@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
+import { useLocation } from "react-router-dom";
 
 import Navbar from "./component/navbar";
 import Home from "./pages/home";
@@ -17,6 +18,8 @@ import Careers from "./pages/Careers";
 import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
 import UseCases from "./pages/UseCases";
+import PrivateLayout from "./layout/PrivateLayout";
+import DashboardHome from "./pages/dashboard/dashboardhome";
 
 
 function App() {
@@ -55,6 +58,23 @@ function App() {
             </>
           }
         />
+
+        {/* DASHBOARD (protected) */}
+<Route
+  path="/dashboard"
+  element={
+    <>
+      <SignedIn>
+        <PrivateLayout />
+      </SignedIn>
+      <SignedOut>
+        <RedirectToSignIn />
+      </SignedOut>
+    </>
+  }
+>
+  <Route index element={<DashboardHome />} />
+</Route>
 
         <Route
           path="/preoperation"
