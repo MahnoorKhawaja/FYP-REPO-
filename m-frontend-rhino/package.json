@@ -21,6 +21,7 @@
     "react-dom": "^19.1.1",
     "react-router-dom": "^7.9.4",
     "react-three-viewer": "^0.0.5",
+    "react-type-animation": "^3.2.0",
     "three": "^0.180.0",
     "three-stdlib": "^2.36.0"
   },

@@ -33,8 +33,19 @@ function App() {
       <Routes>
 
         {/* HOME – visible to all */}
-        <Route path="/" element={<Home />} />
-        <Route path="/features" element={<Features />} />
+<Route
+  path="/"
+  element={
+    <>
+      <SignedIn>
+        <Navigate to="/dashboard" />
+      </SignedIn>
+      <SignedOut>
+        <Home />
+      </SignedOut>
+    </>
+  }
+/>        <Route path="/features" element={<Features />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/demo" element={<Demo />} />
         <Route path="/about" element={<About />} />
