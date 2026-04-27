@@ -698,7 +698,7 @@ from pydantic import BaseModel
 import google.generativeai as genai
 import os
 
-genai.configure(api_key='AIzaSyASqQAaz7JqvVfh8HPzEaHaVU0UQ0tQ7j0')
+genai.configure(api_key='API')
 
 class Feature(BaseModel):
     name: str
