@@ -4,11 +4,13 @@ import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
 import Navbar from "./component/navbar";
 import Home from "./pages/home";
 import Footer from "./component/footer";
+
 import RhinoplastyPage from "./pages/RhinoplastyPage";
 import PreOperationPage from "./pages/preoperation";
 import ComparisonUploadPage from "./pages/postoperation";
 import ThreeD_VertexColorViewer from "./pages/ThreeD_Viewer";
 import ThreeD_PrePostComparison from "./pages/comparison";
+
 import Features from "./pages/Features";
 import Pricing from "./pages/Pricing";
 import Demo from "./pages/Demo";
@@ -18,6 +20,11 @@ import Contact from "./pages/Contact";
 import Privacy from "./pages/Privacy";
 import UseCases from "./pages/UseCases";
 
+import PrivateLayout from "./layout/PrivateLayout";
+import DashboardHome from "./pages/dashboard/dashboardhome";
+import MyPatients from "./pages/dashboard/MyPatients"; // ✅ ADDED
+import PatientDetails from "./pages/dashboard/PatientDetails"; // ✅ ADDED
+import AddPatient from "./pages/dashboard/AddPatient";
 
 function App() {
   return (
@@ -29,8 +36,21 @@ function App() {
 
       <Routes>
 
-        {/* HOME – visible to all */}
-        <Route path="/" element={<Home />} />
+        {/* HOME */}
+        <Route
+          path="/"
+          element={
+            <>
+              <SignedIn>
+                <Navigate to="/dashboard" />
+              </SignedIn>
+              <SignedOut>
+                <Home />
+              </SignedOut>
+            </>
+          }
+        />
+
         <Route path="/features" element={<Features />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/demo" element={<Demo />} />
@@ -40,10 +60,9 @@ function App() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/usecases" element={<UseCases />} />
 
-
-        {/* Protected routes */}
+        {/* PROTECTED ROUTES */}
         <Route
-          path="/rhinoplasty"
+          path="/rhinoplasty/:patientId"
           element={
             <>
               <SignedIn>
@@ -56,8 +75,31 @@ function App() {
           }
         />
 
+        {/* DASHBOARD (layout wrapper) */}
         <Route
-          path="/preoperation"
+          path="/dashboard"
+          element={
+            <>
+              <SignedIn>
+                <PrivateLayout />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
+        >
+          {/* Home */}
+          <Route index element={<DashboardHome />} />
+
+          {/* ✅ ADDED: My Patients page */}
+          <Route path="patients" element={<MyPatients />} />
+          <Route path="patients/:patientId" element={<PatientDetails />} />
+          <Route path="add-patient" element={<AddPatient />} />
+        </Route>
+
+        <Route
+          path="/preoperation/:patientId"
           element={
             <>
               <SignedIn>
@@ -69,8 +111,9 @@ function App() {
             </>
           }
         />
+
         <Route
-          path="/postoperation"
+          path="/postoperation/:patientId"
           element={
             <>
               <SignedIn>
@@ -96,23 +139,22 @@ function App() {
             </>
           }
         />
-        
 
         <Route
-        path="/comparison"
-        element={
-        <>
-        <SignedIn>
-        <ThreeD_PrePostComparison />
-        </SignedIn>
-        <SignedOut>
-        <RedirectToSignIn />
-        </SignedOut>
-        </>
-        }
+          path="/comparison"
+          element={
+            <>
+              <SignedIn>
+                <ThreeD_PrePostComparison />
+              </SignedIn>
+              <SignedOut>
+                <RedirectToSignIn />
+              </SignedOut>
+            </>
+          }
         />
 
-        {/* Safety fallback */}
+        {/* fallback */}
         <Route path="*" element={<Navigate to="/" />} />
 
       </Routes>

@@ -5,6 +5,7 @@ import { OrbitControls } from "three-stdlib";
 import * as THREE from "three";
 import { OBJLoader } from "three-stdlib";
 import { Billboard, Html } from "@react-three/drei";
+import NoseAnalysis from "./NoseAnalysis";
 
 /* =========================================
    LANDMARK INDICES (Replaced Positions)
@@ -426,28 +427,33 @@ export default function ThreeD_VertexColorViewer() {
         )}
 
         {/* RIGHT-SIDE SCORE PANEL */}
-{showFeatures && (
-  <div
-    className="absolute right-5 top-5
-      bg-gradient-to-br from-white/90 via-blue-50/70 to-white/60
-      p-6 rounded-2xl
-      shadow-[0_15px_40px_rgba(0,0,0,0.2)]
-      w-80 space-y-4 z-20
-      border border-white/70"
-  >
-    <h2 className="font-bold text-lg mb-2">Total Score</h2>
+<div className="absolute right-5 top-5 z-20 flex flex-col space-y-1 items-end">
+  {/* Score Panel */}
+  {showFeatures && (
+    <div
+      className="bg-gradient-to-br from-white/90 via-blue-50/70 to-white/60
+        p-6 rounded-2xl
+        shadow-[0_15px_40px_rgba(0,0,0,0.2)]
+        w-80 space-y-4
+        border border-white/70"
+    >
+      <h2 className="font-bold text-lg mb-2">Total Score</h2>
 
-  <div className="text-2xl font-bold text-blue-600">
-  {/* Sum of all feature scores out of 48 */}
-  {calculatedFeatures.reduce((sum, f) => sum + f.score, 0).toFixed(1)} / 48
+      <div className="text-2xl font-bold text-blue-600">
+        {calculatedFeatures.reduce((sum, f) => sum + f.score, 0).toFixed(1)} / 48
+      </div>
+
+      <p className="text-sm text-gray-700">
+        This score represents the combined evaluation of all 12 nasal features.
+        Higher scores indicate better symmetry, proportion, and aesthetic alignment
+        of the nose according to the model’s assessment.
+      </p>
+    </div>
+  )}
+
+  {/* Nose Analysis (now directly under score panel) */}
+  <NoseAnalysis features={calculatedFeatures} />
 </div>
-
-    <p className="text-sm text-gray-700">
-      This score represents the combined evaluation of all 12 nasal features. Higher scores indicate better symmetry, proportion, and aesthetic alignment of the nose according to the model’s assessment.
-    </p>
-  </div>
-)}
-
 
         {/* 3D CANVAS */}
         <Canvas
@@ -485,7 +491,6 @@ export default function ThreeD_VertexColorViewer() {
 
   </>
 )}
-
 
 
           <HorizontalControls />

@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 export default function ComparisonUploadPage() {
   const navigate = useNavigate();
+  const { patientId } = useParams();
 
   const preOpKeys = ["front", "left", "right", "basal"];
   const postOpKeys = ["post_front", "post_left", "post_right", "post_basal"];
@@ -54,7 +56,7 @@ export default function ComparisonUploadPage() {
     try {
       setLoading(true);
       const response = await axios.post(
-        "http://localhost:5000/api/upload_comparison",
+        `http://localhost:5000/api/upload_comparison/${patientId}`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );

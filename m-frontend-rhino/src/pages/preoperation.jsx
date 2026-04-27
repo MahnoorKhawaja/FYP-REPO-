@@ -1,9 +1,13 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom"; 
+import { useParams } from "react-router-dom";
+
+
 
 export default function PreOperationPage() {
   const navigate = useNavigate();  
+  const { patientId } = useParams();
   const [images, setImages] = useState({
     front: null,
     left: null,
@@ -42,7 +46,8 @@ export default function PreOperationPage() {
 
     try {
       setLoading(true);
-      const response = await axios.post("http://localhost:5000/api/upload", formData, {
+      console.log("Submitting images for patient ID:", patientId);
+      const response = await axios.post(`http://localhost:5000/api/upload/${patientId}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },

@@ -2,5 +2,7 @@ venv/
 lvenv/
 backend/venv/
 backend/lvenv/
+m-frontend-rhino/public/results
 **/venv/
+backend/db/connection.py
 **/lvenv/

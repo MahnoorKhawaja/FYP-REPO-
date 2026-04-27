@@ -13,6 +13,9 @@ import math
 import torch
 import mediapipe as mp
 import torch.nn as nn
+from bson import ObjectId
+from datetime import datetime
+from db.connection import patients_collection
 INPUT_FEATURES = 42
 NUM_CLASSES = 4
 NUM_TASKS = 12
@@ -40,7 +43,7 @@ scaler_scale = np.load(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend/scaler_scale.npy
 # -----------------------------
 INPUT_FEATURES2 = 42
 NUM_CLASSES2 = 4
-NUM_TASKS2 = 2   # <---- ONLY TWO OUTPUTS NOW
+NUM_TASKS2 = 2   
 
 BATCH_SIZE2 = 16
 EPOCHS2 = 200
@@ -89,7 +92,7 @@ front_model.eval()
 # -----------------------------
 INPUT_FEATURES3 = 42
 NUM_CLASSES3 = 4
-NUM_TASKS3 = 8   # <---- NOW 8 OUTPUTS
+NUM_TASKS3 = 8  
 
 BATCH_SIZE3 = 16
 EPOCHS3 = 200
@@ -285,7 +288,7 @@ def compute_features(pts):
 def extract_42_features(img):
     """
     Extract the full 42 handcrafted nasal features using Mediapipe.
-    Reuses the same 15 key landmarks and geometry functions from your pipeline.
+    Reuses the same 15 key landmarks and geometry functions from pipeline.
     Returns a 42-length numpy vector.
     """
     img = cv2.imread(img) 
@@ -491,7 +494,6 @@ def generate_3d_obj(image_path):
     
 
 
-
 app = FastAPI()
 
 app.add_middleware(
@@ -505,14 +507,16 @@ app.add_middleware(
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-@app.post("/api/upload")
+@app.post("/api/upload/{patient_id}")
 async def upload_images(
+    patient_id: str,
     front: UploadFile = File(...),
     left: UploadFile = File(...),
     right: UploadFile = File(...),
     basal: UploadFile = File(...),
 ):
     saved_files: Dict[str, str] = {}
+    print(patient_id)
 
     for name, file in [("front", front), ("left", left), ("right", right), ("basal", basal)]:
         file_path = os.path.join(UPLOAD_DIR, file.filename or f"{name}.jpg")
@@ -525,6 +529,27 @@ async def upload_images(
     scores = predict_scores(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['front'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['right'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['left'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['basal'])
     filename = result.split('/')[-1]
     print(filename)
+
+    # =============================
+    # SAVE RESULT TO MONGODB
+    # =============================
+
+    result_data = {
+        "scores": scores,
+        "obj_file": filename,   
+        "images": {
+            "front": saved_files["front"],
+            "left": saved_files["left"],
+            "right": saved_files["right"],
+            "basal": saved_files["basal"],
+        },
+        "created_at": datetime.utcnow()
+    }
+
+    await patients_collection.update_one(
+        {"_id": ObjectId(patient_id)},
+        {"$set": {"preop": result_data}}
+    )
 
      # =============================
     # DELETE ALL FILES IN UPLOAD_DIR
@@ -558,8 +583,9 @@ def save_uploaded_files(files: Dict[str, UploadFile]) -> Dict[str, str]:
 
 #-----------------------------------------------------------------------
 
-@app.post("/api/upload_comparison")
+@app.post("/api/upload_comparison/{patient_id}")
 async def upload_comparison(
+    patient_id: str,
     front: UploadFile = File(...),
     left: UploadFile = File(...),
     right: UploadFile = File(...),
@@ -580,7 +606,7 @@ async def upload_comparison(
 
     try:
         # -----------------------------
-        # 1️⃣ Save all uploaded files
+        # Save all uploaded files
         # -----------------------------
         files_dict = {
             "front": front,
@@ -595,12 +621,12 @@ async def upload_comparison(
         saved_files = save_uploaded_files(files_dict)
 
         # -----------------------------
-        # 2️⃣ Predict nose scores
+        # Predict nose scores
         # -----------------------------
         pre_scores = predict_scores(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['front'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['right'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['left'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['basal'])
         post_scores = predict_scores(r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['post_front'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['post_right'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['post_left'],r"/mnt/c/Amal/FYP_REPO/FYP-REPO-/backend" + "/" + saved_files['post_basal'])
         # -----------------------------
-        # 3️⃣ Generate 3D OBJ 
+        # Generate 3D OBJ 
         # -----------------------------
         obj_file_path = generate_3d_obj(saved_files["front"])
         obj_filename = os.path.basename(obj_file_path)
@@ -608,8 +634,40 @@ async def upload_comparison(
         obj_file_path1 = generate_3d_obj(saved_files["post_front"])
         obj_filename1 = os.path.basename(obj_file_path1)
 
+        result_data = {
+            "preop": {
+                "scores": pre_scores,
+                "obj_file": obj_filename,
+                "images": {
+                    "front": saved_files["front"],
+                    "left": saved_files["left"],
+                    "right": saved_files["right"],
+                    "basal": saved_files["basal"],
+                }
+            },
+            "postop": {
+                "scores": post_scores,
+                "obj_file": obj_filename1,
+                "images": {
+                    "front": saved_files["post_front"],
+                    "left": saved_files["post_left"],
+                    "right": saved_files["post_right"],
+                    "basal": saved_files["post_basal"],
+                }
+            }
+        }
+
+        await patients_collection.update_one(
+            {"_id": ObjectId(patient_id)},
+            {
+                "$set": {
+                    "comparison": result_data
+                }
+            }
+        )
+
         # -----------------------------
-        # 4️⃣ Cleanup uploaded files
+        # Cleanup uploaded files
         # -----------------------------
         for f in glob.glob(os.path.join(UPLOAD_DIR, "*")):
             try:
@@ -617,8 +675,10 @@ async def upload_comparison(
             except Exception as e:
                 print("Failed to delete:", f, e)
 
+        
+
         # -----------------------------
-        # 5️⃣ Return structured response
+        # Return structured response
         # -----------------------------
         return {
             "message": "Pre & Post images processed successfully",
@@ -633,3 +693,97 @@ async def upload_comparison(
     except Exception as e:
         return {"error": str(e)}
 
+
+from pydantic import BaseModel
+import google.generativeai as genai
+import os
+
+genai.configure(api_key='AIzaSyASqQAaz7JqvVfh8HPzEaHaVU0UQ0tQ7j0')
+
+class Feature(BaseModel):
+    name: str
+    score: float
+
+class RequestData(BaseModel):
+    features: list[Feature]
+
+@app.post("/analyze-nose")
+async def analyze_nose(data: RequestData):
+    prompt = f"""
+You are a facial aesthetics expert.
+
+Nasal feature scores:
+{chr(10).join([f"{f.name}: {f.score}" for f in data.features])}
+
+Give:
+- Overall assessment
+- Strengths
+- Improvements
+- Suggestions
+"""
+
+    model = genai.GenerativeModel("gemini-2.5-flash")
+    response = model.generate_content(prompt)
+
+    return {"analysis": response.text}
+
+
+
+class Patient(BaseModel):
+    name: str
+    age: int
+    gender: str
+    notes: str
+    surgeon_id: str
+
+@app.post("/patients")
+async def create_patient(patient: Patient):
+    data = patient.dict()
+    data["created_at"] = datetime.utcnow()
+
+    result = await patients_collection.insert_one(data)
+
+    return {
+        "_id": str(result.inserted_id)
+    }
+
+from fastapi import Query
+
+@app.get("/patients_list")
+async def get_patients(surgeon_id: str = Query(None)):
+
+    query = {}
+
+    if surgeon_id:
+        query["surgeon_id"] = surgeon_id
+
+    patients = await patients_collection.find(query).to_list(100)
+
+    for p in patients:
+        p["_id"] = str(p["_id"])
+
+    return patients
+
+
+@app.get("/patients_details")
+async def get_patients(patient_id: str = Query(None)):
+
+    query = {}
+
+    if patient_id:
+        query["_id"] = ObjectId(patient_id)
+
+    patient = await patients_collection.find_one(query)
+
+    if patient:
+        patient["_id"] = str(patient["_id"])
+        patient["name"] = str(patient["name"])
+        patient["age"] = str(patient["age"])
+        patient["gender"] = str(patient["gender"])
+        patient["notes"] = str(patient["notes"])
+    print(patient)
+    print(f"Returning patient for ID {patient_id}: {patient}") 
+    if patient:
+      return patient 
+
+    return {"error": "Patient not found"}
