@@ -14,17 +14,17 @@ import NoseAnalysis from "./NoseAnalysis";
 ========================================= */
 
 const LANDMARK_INDICES = [
-  { name: "Point 1",  vertexIndex: 47800 },
-  { name: "Point 2",  vertexIndex: 48700 },
-  { name: "Point 3",  vertexIndex: 48600 },
-  { name: "Point 4",  vertexIndex: 39900 },
-  { name: "Point 5",  vertexIndex: 48750 },
-  { name: "Point 6",  vertexIndex: 59800 },
-  { name: "Point 7",  vertexIndex: 48300 },
-  { name: "Point 8",  vertexIndex: 40100 },
-  { name: "Point 9",  vertexIndex: 37300 },
-  { name: "Point 10", vertexIndex: 60810 },
-  { name: "Point 11", vertexIndex: 60740 },
+  { name: "Nasion",  vertexIndex: 47800 },
+  { name: "Subnasale",  vertexIndex: 48700 },
+  { name: "Pronasale",  vertexIndex: 48600 },
+  { name: "Endocanthion_L",  vertexIndex: 39900 },
+  { name: "Labrale superius",  vertexIndex: 48750 },
+  { name: "Endocanthion_R",  vertexIndex: 59800 },
+  { name: "Glabella",  vertexIndex: 48300 },
+  { name: "Alar_L",  vertexIndex: 40100 },
+  { name: "Alar_curvature_L",  vertexIndex: 37300 },
+  { name: "Alar_curvature_R", vertexIndex: 60810 },
+  { name: "Alar_R", vertexIndex: 60740 },
 ];
 
 /* =========================================
@@ -452,7 +452,7 @@ export default function ThreeD_VertexColorViewer() {
   )}
 
   {/* Nose Analysis (now directly under score panel) */}
-  <NoseAnalysis features={calculatedFeatures} />
+  <NoseAnalysis features={calculatedFeatures} mode="preop" />
 </div>
 
         {/* 3D CANVAS */}

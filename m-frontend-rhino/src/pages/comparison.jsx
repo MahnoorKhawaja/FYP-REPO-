@@ -4,22 +4,23 @@ import { Canvas, useLoader, useThree } from "@react-three/fiber";
 import { OrbitControls, OBJLoader } from "three-stdlib";
 import * as THREE from "three";
 import { Billboard, Html } from "@react-three/drei";
+import NoseAnalysis from "./NoseAnalysis";
 
 /* =========================================
    LANDMARK INDICES
 ========================================= */
 const LANDMARK_INDICES = [
-  { name: "Point 1", vertexIndex: 47800 },
-  { name: "Point 2", vertexIndex: 48700 },
-  { name: "Point 3", vertexIndex: 48600 },
-  { name: "Point 4", vertexIndex: 39900 },
-  { name: "Point 5", vertexIndex: 48750 },
-  { name: "Point 6", vertexIndex: 59800 },
-  { name: "Point 7", vertexIndex: 48300 },
-  { name: "Point 8", vertexIndex: 40100 },
-  { name: "Point 9", vertexIndex: 37300 },
-  { name: "Point 10", vertexIndex: 60810 },
-  { name: "Point 11", vertexIndex: 60740 },
+  { name: "Nasion",  vertexIndex: 47800 },
+  { name: "Subnasale",  vertexIndex: 48700 },
+  { name: "Pronasale",  vertexIndex: 48600 },
+  { name: "Endocanthion_L",  vertexIndex: 39900 },
+  { name: "Labrale superius",  vertexIndex: 48750 },
+  { name: "Endocanthion_R",  vertexIndex: 59800 },
+  { name: "Glabella",  vertexIndex: 48300 },
+  { name: "Alar_L",  vertexIndex: 40100 },
+  { name: "Alar_curvature_L",  vertexIndex: 37300 },
+  { name: "Alar_curvature_R", vertexIndex: 60810 },
+  { name: "Alar_R", vertexIndex: 60740 },
 ];
 
 /* =========================================
@@ -261,9 +262,15 @@ export default function ThreeD_PrePostComparison() {
 
   const [preOpData, setPreOpData] = useState({ landmarks: [], features: [] });
   const [postOpData, setPostOpData] = useState({ landmarks: [], features: [] });
-  const [selectedFeature, setSelectedFeature] = useState(null);
   const [showPanel, setShowPanel] = useState(true);
-
+  const [showLandmarks, setShowLandmarks] = useState(false);
+  const [showFeatures, setShowFeatures] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState(null);
+  // const features = preOpData.features.map((f, i) => ({
+  //   name: f.name,
+  //   preScore: preScores[i] ?? 0,
+  //   postScore: postScores[i] ?? 0,
+  // }));
 
  return (
   <div className="min-h-screen w-full bg-gradient-to-b from-gray-100 to-gray-300 flex flex-col items-center justify-center">
@@ -277,6 +284,21 @@ export default function ThreeD_PrePostComparison() {
         Back to Analysis
       </button>
     </div>
+    <div className="flex gap-3 mb-3">
+  <button
+    onClick={() => setShowLandmarks(prev => !prev)}
+    className="px-4 py-2 bg-white rounded-lg shadow"
+  >
+    {showLandmarks ? "Hide Landmarks" : "Show Landmarks"}
+  </button>
+
+  <button
+    onClick={() => setShowFeatures(prev => !prev)}
+    className="px-4 py-2 bg-white rounded-lg shadow"
+  >
+    {showFeatures ? "Hide Features" : "Show Features"}
+  </button>
+</div>
 
     <div
       className="relative grid grid-cols-2 gap-4 rounded-2xl shadow-2xl border border-gray-300 p-4"
@@ -298,6 +320,25 @@ export default function ThreeD_PrePostComparison() {
             rotateY={Math.PI / 2}
             onCalculated={setPreOpData}
           />
+          <Landmarks points={showLandmarks ? preOpData.landmarks : []} />
+
+          {showFeatures && preOpData.features?.map((f, i) => (
+            <group key={`pre-${i}`}>
+              {selectedFeature === i && (
+                <>
+                  <HighlightSphere
+                    position={f.center}
+                    radius={f.radius}
+                    scaleX={f.scaleX}
+                    scaleY={f.scaleY}
+                    scaleZ={f.scaleZ}
+                    active={true}
+                  />
+                  {/* <FeatureLabel position={f.center} name={f.name} /> */}
+                </>
+              )}
+            </group>
+          ))}
 
           <HorizontalControls />
         </Canvas>
@@ -315,6 +356,26 @@ export default function ThreeD_PrePostComparison() {
             rotateY={Math.PI / 2}
             onCalculated={setPostOpData}
           />
+
+          <Landmarks points={showLandmarks ? postOpData.landmarks : []} />
+
+          {showFeatures && postOpData.features?.map((f, i) => (
+            <group key={`post-${i}`}>
+              {selectedFeature === i && (
+                <>
+                  <HighlightSphere
+                    position={f.center}
+                    radius={f.radius}
+                    scaleX={f.scaleX}
+                    scaleY={f.scaleY}
+                    scaleZ={f.scaleZ}
+                    active={true}
+                  />
+                  {/* <FeatureLabel position={f.center} name={f.name} /> */}
+                </>
+              )}
+            </group>
+          ))}
 
           <HorizontalControls />
         </Canvas>
@@ -341,32 +402,48 @@ export default function ThreeD_PrePostComparison() {
   `}
 >
   {showPanel && (() => {
-    const savedScores = JSON.parse(localStorage.getItem("nose_scores")) || { pre: [], post: [] };
-    const preScores = savedScores.pre;
-    const postScores = savedScores.post;
+  const savedScores = JSON.parse(localStorage.getItem("nose_scores")) || { pre: [], post: [] };
+  const preScores = savedScores.pre;
+  const postScores = savedScores.post;
 
-    return (
-      <>
-        <h2 className="font-bold text-lg mb-2">Feature Comparison</h2>
+  const features = preOpData.features.map((f, i) => ({
+    name: f.name,
+    preScore: preScores[i] ?? 0,
+    postScore: postScores[i] ?? 0,
+  }));
 
-        {preOpData.features.map((f, i) => {
-          const preScore = preScores[i] ?? 0;
-          const postScore = postScores[i] ?? 0;
-          const diff = postScore - preScore;
-          console.log(`Feature: ${f.name}, Pre: ${preScore}, Post: ${postScore}, Diff: ${diff}`);
+  return (
+    <>
+      <h2 className="font-bold text-lg mb-2">Feature Comparison</h2>
 
-          return (
-            <div key={i} className="flex justify-between mb-1">
+      {features.map((f, i) => {
+        const diff = f.postScore - f.preScore;
+
+        return (
+          <div key={i} className="flex justify-between mb-1">
+            <button
+              onClick={() => setSelectedFeature(i)}
+              className={`flex justify-between w-full text-left px-2 py-1 rounded-lg transition
+                ${selectedFeature === i ? "bg-blue-100 font-semibold" : "hover:bg-gray-100"}
+              `}
+            >
               <span>{f.name}</span>
+
               <span className={`${diff > 0 ? "text-green-600" : diff < 0 ? "text-red-600" : ""}`}>
-                {preScore} → {postScore} ({diff >= 0 ? "+" : ""}{diff})
+                {f.preScore} → {f.postScore} ({diff >= 0 ? "+" : ""}{diff})
               </span>
-            </div>
-          );
-        })}
-      </>
-    );
-  })()}
+            </button>
+           
+          </div>
+        );
+      })}
+
+      {/* ✅ NOW this works */}
+      <NoseAnalysis features={features} mode="comparison" />
+    </>
+  );
+})()}
+ 
 </div>
     </div>
   </div>

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import ReactMarkdown from "react-markdown";
 
-export default function NoseAnalysis({ features }) {
+export default function NoseAnalysis({ features, mode }) {
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState("");
 
@@ -14,7 +14,10 @@ export default function NoseAnalysis({ features }) {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ features }),
+        body: JSON.stringify({ 
+          features,
+          mode   // this will be "preop" or "comparison"
+        }),
       });
 
       const data = await res.json();

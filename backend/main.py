@@ -697,36 +697,63 @@ async def upload_comparison(
 from pydantic import BaseModel
 import google.generativeai as genai
 import os
+from typing import Optional
 
-genai.configure(api_key='AIzaSyASqQAaz7JqvVfh8HPzEaHaVU0UQ0tQ7j0')
+genai.configure(api_key='')
 
 class Feature(BaseModel):
     name: str
-    score: float
+    score: Optional[float] = None
+    preScore: Optional[float] = None
+    postScore: Optional[float] = None
 
 class RequestData(BaseModel):
     features: list[Feature]
+    mode: str
 
 @app.post("/analyze-nose")
 async def analyze_nose(data: RequestData):
-    prompt = f"""
+
+    if data.mode == "comparison":
+        feature_text = "\n".join([
+            f"{f.name}: Before={f.preScore}, After={f.postScore}, Change={(f.postScore or 0) - (f.preScore or 0)}"
+            for f in data.features
+        ])
+
+        prompt = f"""
+You are a facial aesthetics expert.
+
+Nasal feature comparison:
+{feature_text}
+
+Task:
+- Evaluate surgical improvement
+- Highlight successful corrections
+- Point out remaining issues
+- Keep each point one line, concise, surgeon-focused
+"""
+
+    else:  # preop
+        feature_text = "\n".join([
+            f"{f.name}: {f.score}"
+            for f in data.features
+        ])
+
+        prompt = f"""
 You are a facial aesthetics expert.
 
 Nasal feature scores:
-{chr(10).join([f"{f.name}: {f.score}" for f in data.features])}
+{feature_text}
 
-Give:
-- Overall assessment
-- Strengths
-- Improvements
-- Suggestions
+Task:
+- Suggest pre-operative improvements
+- Keep each point one line, actionable
 """
 
     model = genai.GenerativeModel("gemini-2.5-flash")
     response = model.generate_content(prompt)
 
     return {"analysis": response.text}
-
 
 
 class Patient(BaseModel):
