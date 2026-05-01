@@ -699,6 +699,7 @@ import google.generativeai as genai
 import os
 from typing import Optional
 
+genai.configure(api_key='API')
 genai.configure(api_key='')
 
 class Feature(BaseModel):
