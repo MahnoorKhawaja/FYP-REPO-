@@ -9,7 +9,7 @@ export default function NoseAnalysis({ features, mode }) {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/analyze-nose", {
+      const res = await fetch("http://localhost:8000/analyze-nose", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -18,7 +18,7 @@ function MyPatients() {
   const fetchPatients = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/patients_list?surgeon_id=${user.id}`
+        `http://localhost:8000/patients_list?surgeon_id=${user.id}`
       );
 
       setPatients(res.data);
