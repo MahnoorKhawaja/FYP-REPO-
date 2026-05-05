@@ -134,7 +134,7 @@ export default function ComparisonUploadPage() {
       console.log("Received response:", response.data);
 
       alert("Upload successful! Redirecting to comparison page...");
-      navigate("/comparison");
+      navigate(`/comparison/${patientId}`);
 
     } catch (error) {
       console.error("Upload failed:", error);

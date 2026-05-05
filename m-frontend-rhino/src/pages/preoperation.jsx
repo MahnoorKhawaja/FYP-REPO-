@@ -94,7 +94,7 @@ export default function PreOperationPage() {
       localStorage.setItem("noseScores", JSON.stringify(response.data["nose_scores"]));
       console.log("Stored filename in localStorage:", response.data["3d_results"]);
       alert("Images uploaded successfully!");
-      navigate("/success");
+      navigate(`/success/${patientId}`);
     } catch (error) {
       console.error("Upload failed:", error);
       alert("Failed to upload images. Check the console for details.");

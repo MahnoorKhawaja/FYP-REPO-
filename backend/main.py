@@ -1,3 +1,5 @@
+from fileinput import filename
+
 from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from score_calculation.frontal_score import get_nose_coords
@@ -165,6 +167,7 @@ async def upload_images(
         {"_id": ObjectId(patient_id)},
         {"$set": {"preop": result_data}}
     )
+    print(f"Saved preop data for patient {patient_id} to MongoDB")  
 
      # =============================
     # DELETE ALL FILES IN UPLOAD_DIR
@@ -272,6 +275,23 @@ async def upload_comparison(
             }
         }
 
+        result_data1 = {
+                "scores": pre_scores,
+                "obj_file": obj_filename,   
+                "images": {
+                    "front": saved_files["front"],
+                    "left": saved_files["left"],
+                    "right": saved_files["right"],
+                    "basal": saved_files["basal"],
+                },
+                "created_at": datetime.utcnow()
+            }
+
+        await patients_collection.update_one(
+                {"_id": ObjectId(patient_id)},
+                {"$set": {"preop": result_data1}}
+            )
+
         await patients_collection.update_one(
             {"_id": ObjectId(patient_id)},
             {
@@ -280,6 +300,7 @@ async def upload_comparison(
                 }
             }
         )
+        print(f"Saved comparison data for patient {patient_id} to MongoDB")
 
         # -----------------------------
         # Cleanup uploaded files
@@ -314,7 +335,7 @@ import google.generativeai as genai
 import os
 from typing import Optional
 
-genai.configure(api_key='API KEY')
+genai.configure(api_key='API')
 
 class Feature(BaseModel):
     name: str
@@ -423,9 +444,52 @@ async def get_patients(patient_id: str = Query(None)):
         patient["age"] = str(patient["age"])
         patient["gender"] = str(patient["gender"])
         patient["notes"] = str(patient["notes"])
+        patient["has_preop"] = "preop" in patient
+        patient["has_comparison"] = "comparison" in patient
     print(patient)
     print(f"Returning patient for ID {patient_id}: {patient}") 
     if patient:
       return patient 
 
     return {"error": "Patient not found"}
+
+@app.get("/preop/{patient_id}")
+async def get_preop(patient_id: str):
+    data = await patients_collection.find_one(
+        {"_id": ObjectId(patient_id)},
+        {"_id": 0, "preop": 1}
+    )
+
+    if not data or "preop" not in data:
+        return {"error": "Preop data not found"}
+
+    return {
+        "filename": data["preop"].get("obj_file"),
+        "scores": data["preop"].get("scores", [])
+    }
+
+@app.get("/comparison/{patient_id}")
+async def get_comparison(patient_id: str):
+    try:
+        data = await patients_collection.find_one(
+            {"_id": ObjectId(patient_id)},
+            {"_id": 0, "comparison": 1}   # 👈 fetch comparison only
+        )
+    except Exception:
+        return {"error": "Invalid patient ID"}
+
+    if not data or "comparison" not in data:
+        return {"error": "Comparison data not found"}
+
+    comp = data["comparison"]
+
+    return {
+        "preop": {
+            "filename": comp.get("preop", {}).get("obj_file"),
+            "scores": comp.get("preop", {}).get("scores", [])
+        },
+        "postop": {
+            "filename": comp.get("postop", {}).get("obj_file"),
+            "scores": comp.get("postop", {}).get("scores", [])
+        }
+    }

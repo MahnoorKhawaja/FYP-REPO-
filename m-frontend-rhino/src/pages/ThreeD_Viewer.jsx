@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { OBJLoader } from "three-stdlib";
 import { Billboard, Html } from "@react-three/drei";
 import NoseAnalysis from "./NoseAnalysis";
+import { useParams } from "react-router-dom";
 
 /* =========================================
    LANDMARK INDICES (Replaced Positions)
@@ -51,15 +52,7 @@ const FEATURE_INDICES_TEMP = [
    Load scores from localStorage
 ========================================= */
 
-// Retrieve scores from localStorage
-const savedScores = JSON.parse(localStorage.getItem("noseScores")) || [];
-console.log("Retrieved nose scores from localStorage:", savedScores);
 
-// Map FEATURE_INDICES and update the score
-const FEATURE_INDICES = FEATURE_INDICES_TEMP.map((ft, idx) => ({
-  ...ft,
-  score: savedScores[idx] ?? ft.score,  // fallback to existing score if undefined
-}));
 
 /* =========================================
    CONTROLS
@@ -216,12 +209,7 @@ function HighlightSphere({ position, radius = 0.15, scaleX = 2, scaleY = 1.5, sc
    OBJ MODEL & CALCULATION LOGIC
 ========================================= */
 
-function VertexColorModel({ 
-  objUrl, 
-  flipFront = false, 
-  rotateY = 0, 
-  onCalculated 
-}) {
+function VertexColorModel({ objUrl, flipFront = false, rotateY = 0, onCalculated, featureIndices }) {
   const rawObj = useLoader(OBJLoader, objUrl);
 
 // Make the loaded OBJ stable
@@ -305,7 +293,7 @@ useEffect(() => {
       position: getVertexWorldPosition(meshFound, lm.vertexIndex)
     }));
 
-    const calcFeatures = FEATURE_INDICES.map(ft => ({
+    const calcFeatures = featureIndices.map(ft => ({
   name: ft.name,
   center: getVertexWorldPosition(meshFound, ft.vertexIndex),
   score: ft.score,
@@ -324,16 +312,20 @@ useEffect(() => {
 }
 
 
+
 /* =========================================
    MAIN COMPONENT
 ========================================= */
 
 export default function ThreeD_VertexColorViewer() {
-  const navigate = useNavigate();
-  let filename = localStorage.getItem("resultFilename");
-  filename = filename.replace(".obj", "_obj.obj");
+  const navigate = useNavigate();  
+  const { patientId } = useParams();
+  const [scores, setScores] = useState([]);
+  const [filename, setFilename] = useState(null);
+  // let filename = localStorage.getItem("resultFilename");
+  // filename = filename.replace(".obj", "_obj.obj");
   //let filename = "a2ad9056bc7a46d2968a66669ebbfb07_obj.obj"; //for testing 
-  const url = `/results/${filename}`;
+  const url = filename ? `/results/${filename.replace(".obj", "_obj.obj")}` : null;
 
   const [showLandmarks, setShowLandmarks] = useState(false);
   const [showFeatures, setShowFeatures] = useState(false);
@@ -347,6 +339,36 @@ export default function ThreeD_VertexColorViewer() {
     setCalculatedLandmarks(landmarks);
     setCalculatedFeatures(features);
   };
+
+  useEffect(() => {
+  if (!patientId) return;
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch(`http://localhost:8000/preop/${patientId}`);
+      const data = await res.json();
+
+      setScores(data.scores || []);
+      setFilename(data.filename);
+    } catch (err) {
+      console.error("Error fetching preop data:", err);
+    }
+  };
+
+  fetchData();
+}, [patientId]);
+
+// Retrieve scores from localStorage
+// const savedScores = JSON.parse(localStorage.getItem("noseScores")) || [];
+// console.log("Retrieved nose scores from localStorage:", savedScores);
+
+// Map FEATURE_INDICES and update the score
+const FEATURE_INDICES = useMemo(() => {
+  return FEATURE_INDICES_TEMP.map((ft, idx) => ({
+    ...ft,
+    score: scores[idx] ?? ft.score
+  }));
+}, [scores]);
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-gray-100 to-gray-300 flex flex-col items-center justify-center">
@@ -464,11 +486,14 @@ export default function ThreeD_VertexColorViewer() {
           <directionalLight position={[1.5, 2, 3]} intensity={1.6} />
           <pointLight position={[-2, -1, 3]} intensity={1.2} />
 
-          <VertexColorModel 
-            objUrl={url} 
-            rotateY={Math.PI / 2} 
-            onCalculated={handleCalculatedPositions}
-          />
+          {url && (
+            <VertexColorModel 
+              objUrl={url} 
+              rotateY={Math.PI / 2} 
+              onCalculated={handleCalculatedPositions}
+              featureIndices={FEATURE_INDICES}
+            />
+          )}
 
           {showLandmarks && <Landmarks points={calculatedLandmarks} />}
           

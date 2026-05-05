@@ -5,6 +5,7 @@ import { OrbitControls, OBJLoader } from "three-stdlib";
 import * as THREE from "three";
 import { Billboard, Html } from "@react-three/drei";
 import NoseAnalysis from "./NoseAnalysis";
+import { useParams } from "react-router-dom";
 
 /* =========================================
    LANDMARK INDICES
@@ -134,12 +135,7 @@ function HighlightSphere({ position, radius = 0.15, scaleX = 2, scaleY = 1.5, sc
    OBJ MODEL & CALCULATION LOGIC
 ========================================= */
 
-function VertexColorModel({ 
-  objUrl, 
-  flipFront = false, 
-  rotateY = 0, 
-  onCalculated 
-}) {
+function VertexColorModel({ objUrl, flipFront = false, rotateY = 0, onCalculated, scores }){
   const rawObj = useLoader(OBJLoader, objUrl);
 
 // Make the loaded OBJ stable
@@ -223,14 +219,14 @@ useEffect(() => {
       position: getVertexWorldPosition(meshFound, lm.vertexIndex)
     }));
 
-    const calcFeatures = FEATURE_INDICES.map(ft => ({
+    const calcFeatures = FEATURE_INDICES.map((ft, idx) => ({
   name: ft.name,
   center: getVertexWorldPosition(meshFound, ft.vertexIndex),
-  score: ft.score,
-  radius: ft.radius ?? 0.15,   // fallback if undefined
-  scaleX: ft.scaleX ?? 1,
-  scaleY: ft.scaleY ?? 1,
-  scaleZ: ft.scaleZ ?? 1
+  score: scores?.[idx] ?? 0,
+  radius: ft.radius,
+  scaleX: ft.scaleX,
+  scaleY: ft.scaleY,
+  scaleZ: ft.scaleZ
 }));
 
     stableOnCalculated({ landmarks: calcLandmarks, features: calcFeatures });
@@ -244,21 +240,20 @@ useEffect(() => {
    MAIN COMPONENT
 ========================================= */
 export default function ThreeD_PrePostComparison() {
-  const navigate = useNavigate();
+  const navigate = useNavigate();  
+  const { patientId } = useParams();
+  const [preScores, setPreScores] = useState([]);
+  const [postScores, setPostScores] = useState([]);
+  const [preFilename, setPreFilename] = useState(null);
+  const [postFilename, setPostFilename] = useState(null);
 
-  // Example file names
-  let filename_pre = localStorage.getItem("resultFilename_pre");
-  let filename_post = localStorage.getItem("resultFilename_post");
-  console.log("Loaded filename pre:", filename_pre);
-  console.log("Loaded filename post:", filename_post);
-  let scores = localStorage.getItem("nose_scores");
-  console.log("Loaded scores:", scores);
-  filename_pre = filename_pre.replace(".obj", "_obj.obj");
-  filename_post = filename_post.replace(".obj", "_obj.obj");
-  const preOpFilename = filename_pre;
-  const postOpFilename = filename_post;
-  const preOpUrl = `/results/${preOpFilename}`;
-  const postOpUrl = `/results/${postOpFilename}`;
+  const preOpUrl = preFilename
+  ? `/results/${preFilename.replace(".obj", "_obj.obj")}`
+  : null;
+
+  const postOpUrl = postFilename
+    ? `/results/${postFilename.replace(".obj", "_obj.obj")}`
+    : null;
 
   const [preOpData, setPreOpData] = useState({ landmarks: [], features: [] });
   const [postOpData, setPostOpData] = useState({ landmarks: [], features: [] });
@@ -271,6 +266,27 @@ export default function ThreeD_PrePostComparison() {
   //   preScore: preScores[i] ?? 0,
   //   postScore: postScores[i] ?? 0,
   // }));
+  useEffect(() => {
+  if (!patientId) return;
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch(`http://localhost:8000/comparison/${patientId}`);
+      const data = await res.json();
+
+      setPreScores(data.preop?.scores || []);
+      setPostScores(data.postop?.scores || []);
+
+      setPreFilename(data.preop?.filename);
+      setPostFilename(data.postop?.filename);
+
+    } catch (err) {
+      console.error("Error fetching comparison data:", err);
+    }
+  };
+
+  fetchData();
+}, [patientId]);
 
  return (
   <div className="min-h-screen w-full bg-gradient-to-b from-gray-100 to-gray-300 flex flex-col items-center justify-center">
@@ -278,7 +294,7 @@ export default function ThreeD_PrePostComparison() {
 
     <div className="flex gap-4 mb-4 z-20">
       <button
-        onClick={() => navigate("/rhinoplasty")}
+        onClick={() => navigate(`/rhinoplasty/${patientId}`)}
         className="relative bg-[linear-gradient(#262626,#262626),linear-gradient(#3b82f6,#3b82f6)] bg-[length:100%_2px,0_2px] bg-[position:100%_100%,0_100%] bg-no-repeat text-neutral-950 text-xl transition-[background-size] duration-300 hover:bg-[0_2px,100%_2px]"
       >
         Back to Analysis
@@ -319,6 +335,7 @@ export default function ThreeD_PrePostComparison() {
             objUrl={preOpUrl}
             rotateY={Math.PI / 2}
             onCalculated={setPreOpData}
+            scores={preScores}
           />
           <Landmarks points={showLandmarks ? preOpData.landmarks : []} />
 
@@ -355,6 +372,7 @@ export default function ThreeD_PrePostComparison() {
             objUrl={postOpUrl}
             rotateY={Math.PI / 2}
             onCalculated={setPostOpData}
+            scores={postScores}
           />
 
           <Landmarks points={showLandmarks ? postOpData.landmarks : []} />
@@ -402,10 +420,6 @@ export default function ThreeD_PrePostComparison() {
   `}
 >
   {showPanel && (() => {
-  const savedScores = JSON.parse(localStorage.getItem("nose_scores")) || { pre: [], post: [] };
-  const preScores = savedScores.pre;
-  const postScores = savedScores.post;
-
   const features = preOpData.features.map((f, i) => ({
     name: f.name,
     preScore: preScores[i] ?? 0,
@@ -438,7 +452,6 @@ export default function ThreeD_PrePostComparison() {
         );
       })}
 
-      {/* ✅ NOW this works */}
       <NoseAnalysis features={features} mode="comparison" />
     </>
   );

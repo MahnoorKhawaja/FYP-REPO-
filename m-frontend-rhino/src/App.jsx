@@ -127,7 +127,7 @@ function App() {
         />
 
         <Route
-          path="/success"
+          path="/success/:patientId"
           element={
             <>
               <SignedIn>
@@ -141,7 +141,7 @@ function App() {
         />
 
         <Route
-          path="/comparison"
+          path="/comparison/:patientId"
           element={
             <>
               <SignedIn>

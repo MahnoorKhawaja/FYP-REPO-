@@ -81,9 +81,47 @@ function PatientDetails() {
             <p className="mt-1 text-gray-600">{patient ? patient.notes : "N/A"}</p>
           </div>
 
+          {/* Action Buttons */}
+          <div className="mt-8 flex gap-4 flex-wrap">
+
+            {/* Preop Button */}
+            <button
+              onClick={() => navigate(`/success/${patientId}`)}
+              disabled={!patient?.has_preop}
+              className={`px-5 py-2 rounded-xl text-sm font-medium transition
+                ${patient?.has_preop 
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700" 
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
+            >
+              Preop
+            </button>
+
+            {/* Postop Button */}
+            <button
+              onClick={() => navigate(`/comparison/${patientId}`)}
+              disabled={!patient?.has_comparison}
+              className={`px-5 py-2 rounded-xl text-sm font-medium transition
+                ${patient?.has_comparison 
+                  ? "bg-indigo-600 text-white hover:bg-indigo-700" 
+                  : "bg-gray-200 text-gray-400 cursor-not-allowed"}`}
+            >
+              Postop
+            </button>
+
+            {/* Rhinoplasty Button (always enabled) */}
+            <button
+              onClick={() => navigate(`/rhinoplasty/${patientId}`)}
+              className="px-5 py-2 rounded-xl text-sm font-medium bg-black text-white hover:bg-gray-800 transition"
+            >
+              Rhinoplasty
+            </button>
+
+          </div>
+
         </div>
 
       </div>
+      
     </div>
   );
 }
