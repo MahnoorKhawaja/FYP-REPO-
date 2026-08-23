@@ -1,9 +1,78 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 export default function ComparisonUploadPage() {
   const navigate = useNavigate();
+  const { patientId } = useParams();
+  const [showGuide, setShowGuide] = useState(false);
+  const guideContent = {
+  front: {
+    text: [
+      "Face straight, looking forward",
+      "Neutral expression",
+      "Hair pulled back",
+      "Even lighting",
+    ],
+    img: "/guides/cshape.png",
+  },
+  left: {
+    text: [
+      "Exact 90° left profile",
+      "Head level",
+      "Nasal bridge fully visible",
+    ],
+    img: "/guides/sidecheck6.png",
+  },
+  right: {
+    text: [
+      "Exact 90° right profile",
+      "Same lighting as left",
+    ],
+    img: "/guides/righttt.png",
+  },
+  basal: {
+    text: [
+      "Nostrils clearly visible",
+      "Head slightly tilted upward",
+      "Camera below nose level",
+    ],
+    img: "/guides/basal_try.JPG",
+  },
+  post_front: {
+    text: [
+      "Face straight, looking forward",
+      "Neutral expression",
+      "Hair pulled back",
+      "Even lighting",
+    ],
+    img: "/guides/cshape.png",
+  },
+  post_left: {
+    text: [
+      "Exact 90° left profile",
+      "Head level",
+      "Nasal bridge fully visible",
+    ],
+    img: "/guides/sidecheck6.png",
+  },
+  post_right: {
+    text: [
+      "Exact 90° right profile",
+      "Same lighting as left",
+    ],
+    img: "/guides/righttt.png",
+  },
+  post_basal: {
+    text: [
+      "Nostrils clearly visible",
+      "Head slightly tilted upward",
+      "Camera below nose level",
+    ],
+    img: "/guides/basal_try.JPG",
+  },
+};
 
   const preOpKeys = ["front", "left", "right", "basal"];
   const postOpKeys = ["post_front", "post_left", "post_right", "post_basal"];
@@ -54,7 +123,7 @@ export default function ComparisonUploadPage() {
     try {
       setLoading(true);
       const response = await axios.post(
-        "http://localhost:5000/api/upload_comparison",
+        `http://localhost:8000/api/upload_comparison/${patientId}`,
         formData,
         { headers: { "Content-Type": "multipart/form-data" } }
       );
@@ -65,7 +134,7 @@ export default function ComparisonUploadPage() {
       console.log("Received response:", response.data);
 
       alert("Upload successful! Redirecting to comparison page...");
-      navigate("/comparison");
+      navigate(`/comparison/${patientId}`);
 
     } catch (error) {
       console.error("Upload failed:", error);
@@ -80,6 +149,8 @@ export default function ComparisonUploadPage() {
       key={key}
       className="bg-white/10 rounded-2xl shadow-lg p-4 flex flex-col items-center justify-center hover:bg-white/20 transition"
     >
+      
+
       <label htmlFor={key} className="cursor-pointer flex flex-col items-center">
         {preview[key] ? (
           <img
@@ -101,13 +172,34 @@ export default function ComparisonUploadPage() {
         />
         <span className="text-sm font-medium">{label}</span>
       </label>
+      {showGuide && (
+  <div className="mt-3 text-xs bg-black/20 p-2 rounded-lg">
+    
+    <img
+  src={guideContent[key].img}
+  className="w-full h-24 object-cover rounded mb-2 border border-white/30"
+/>
+
+    <ul className="list-disc ml-4 opacity-80">
+      {guideContent[key].text.map((t, i) => (
+        <li key={i}>{t}</li>
+      ))}
+    </ul>
+
+  </div>
+)}
     </div>
   );
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-start bg-gradient-to-br from-indigo-900 via-purple-700 to-pink-500 p-8 text-white">
       <h1 className="text-3xl font-bold mb-10">Upload Pre & Post Operation Images</h1>
-
+<button
+  onClick={() => setShowGuide(!showGuide)}
+  className="mb-6 bg-white text-blue-800 px-4 py-2 rounded-xl font-semibold hover:bg-blue-100 transition"
+>
+  {showGuide ? "Hide Guide" : "Show Guide"}
+</button>
       <h2 className="text-xl font-semibold mb-4">Pre-Operation Images</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-6xl mb-10">
         {preOpKeys.map((key) =>

@@ -249,10 +249,12 @@ const Demo = () => {
               {!showViewer ? (
                 <div className="text-center text-slate-400">Processing preview…</div>
               ) : (
-                <div className="w-40 h-40 perspective-800">
-                  <div className="relative w-full h-full transform-style-preserve-3d animate-rotate-cube">
-                    <div className="absolute inset-0 bg-slate-700/40 border border-slate-600 rounded-md" />
-                  </div>
+                <div className="w-full h-full flex items-center justify-center">
+                  <img
+                    src="/3d-preview.png"
+                    alt="3D Model Preview"
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-lg opacity-0 animate-fadeIn"
+                  />
                 </div>
               )}
             </div>
@@ -269,6 +271,14 @@ const Demo = () => {
           100% { transform: rotateX(0) rotateY(360deg); }
         }
         .animate-rotate-cube { animation: rotate-cube 6s linear infinite; }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.98); }
+          to { opacity: 1; transform: scale(1); }
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.6s ease forwards;
+        }
       `}</style>
     </main>
   );

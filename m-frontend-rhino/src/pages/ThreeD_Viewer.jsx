@@ -5,6 +5,8 @@ import { OrbitControls } from "three-stdlib";
 import * as THREE from "three";
 import { OBJLoader } from "three-stdlib";
 import { Billboard, Html } from "@react-three/drei";
+import NoseAnalysis from "./NoseAnalysis";
+import { useParams } from "react-router-dom";
 
 /* =========================================
    LANDMARK INDICES (Replaced Positions)
@@ -13,17 +15,17 @@ import { Billboard, Html } from "@react-three/drei";
 ========================================= */
 
 const LANDMARK_INDICES = [
-  { name: "Point 1",  vertexIndex: 47800 },
-  { name: "Point 2",  vertexIndex: 48700 },
-  { name: "Point 3",  vertexIndex: 48600 },
-  { name: "Point 4",  vertexIndex: 39900 },
-  { name: "Point 5",  vertexIndex: 48750 },
-  { name: "Point 6",  vertexIndex: 59800 },
-  { name: "Point 7",  vertexIndex: 48300 },
-  { name: "Point 8",  vertexIndex: 40100 },
-  { name: "Point 9",  vertexIndex: 37300 },
-  { name: "Point 10", vertexIndex: 60810 },
-  { name: "Point 11", vertexIndex: 60740 },
+  { name: "Nasion",  vertexIndex: 47800 },
+  { name: "Subnasale",  vertexIndex: 48700 },
+  { name: "Pronasale",  vertexIndex: 48600 },
+  { name: "Endocanthion_L",  vertexIndex: 39900 },
+  { name: "Labrale superius",  vertexIndex: 48750 },
+  { name: "Endocanthion_R",  vertexIndex: 59800 },
+  { name: "Glabella",  vertexIndex: 48300 },
+  { name: "Alar_L",  vertexIndex: 40100 },
+  { name: "Alar_curvature_L",  vertexIndex: 37300 },
+  { name: "Alar_curvature_R", vertexIndex: 60810 },
+  { name: "Alar_R", vertexIndex: 60740 },
 ];
 
 /* =========================================
@@ -50,15 +52,7 @@ const FEATURE_INDICES_TEMP = [
    Load scores from localStorage
 ========================================= */
 
-// Retrieve scores from localStorage
-const savedScores = JSON.parse(localStorage.getItem("noseScores")) || [];
-console.log("Retrieved nose scores from localStorage:", savedScores);
 
-// Map FEATURE_INDICES and update the score
-const FEATURE_INDICES = FEATURE_INDICES_TEMP.map((ft, idx) => ({
-  ...ft,
-  score: savedScores[idx] ?? ft.score,  // fallback to existing score if undefined
-}));
 
 /* =========================================
    CONTROLS
@@ -215,12 +209,7 @@ function HighlightSphere({ position, radius = 0.15, scaleX = 2, scaleY = 1.5, sc
    OBJ MODEL & CALCULATION LOGIC
 ========================================= */
 
-function VertexColorModel({ 
-  objUrl, 
-  flipFront = false, 
-  rotateY = 0, 
-  onCalculated 
-}) {
+function VertexColorModel({ objUrl, flipFront = false, rotateY = 0, onCalculated, featureIndices }) {
   const rawObj = useLoader(OBJLoader, objUrl);
 
 // Make the loaded OBJ stable
@@ -304,7 +293,7 @@ useEffect(() => {
       position: getVertexWorldPosition(meshFound, lm.vertexIndex)
     }));
 
-    const calcFeatures = FEATURE_INDICES.map(ft => ({
+    const calcFeatures = featureIndices.map(ft => ({
   name: ft.name,
   center: getVertexWorldPosition(meshFound, ft.vertexIndex),
   score: ft.score,
@@ -323,16 +312,20 @@ useEffect(() => {
 }
 
 
+
 /* =========================================
    MAIN COMPONENT
 ========================================= */
 
 export default function ThreeD_VertexColorViewer() {
-  const navigate = useNavigate();
-  let filename = localStorage.getItem("resultFilename");
-  filename = filename.replace(".obj", "_obj.obj");
+  const navigate = useNavigate();  
+  const { patientId } = useParams();
+  const [scores, setScores] = useState([]);
+  const [filename, setFilename] = useState(null);
+  // let filename = localStorage.getItem("resultFilename");
+  // filename = filename.replace(".obj", "_obj.obj");
   //let filename = "a2ad9056bc7a46d2968a66669ebbfb07_obj.obj"; //for testing 
-  const url = `/results/${filename}`;
+  const url = filename ? `/results/${filename.replace(".obj", "_obj.obj")}` : null;
 
   const [showLandmarks, setShowLandmarks] = useState(false);
   const [showFeatures, setShowFeatures] = useState(false);
@@ -346,6 +339,36 @@ export default function ThreeD_VertexColorViewer() {
     setCalculatedLandmarks(landmarks);
     setCalculatedFeatures(features);
   };
+
+  useEffect(() => {
+  if (!patientId) return;
+
+  const fetchData = async () => {
+    try {
+      const res = await fetch(`http://localhost:8000/preop/${patientId}`);
+      const data = await res.json();
+
+      setScores(data.scores || []);
+      setFilename(data.filename);
+    } catch (err) {
+      console.error("Error fetching preop data:", err);
+    }
+  };
+
+  fetchData();
+}, [patientId]);
+
+// Retrieve scores from localStorage
+// const savedScores = JSON.parse(localStorage.getItem("noseScores")) || [];
+// console.log("Retrieved nose scores from localStorage:", savedScores);
+
+// Map FEATURE_INDICES and update the score
+const FEATURE_INDICES = useMemo(() => {
+  return FEATURE_INDICES_TEMP.map((ft, idx) => ({
+    ...ft,
+    score: scores[idx] ?? ft.score
+  }));
+}, [scores]);
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-gray-100 to-gray-300 flex flex-col items-center justify-center">
@@ -426,28 +449,33 @@ export default function ThreeD_VertexColorViewer() {
         )}
 
         {/* RIGHT-SIDE SCORE PANEL */}
-{showFeatures && (
-  <div
-    className="absolute right-5 top-5
-      bg-gradient-to-br from-white/90 via-blue-50/70 to-white/60
-      p-6 rounded-2xl
-      shadow-[0_15px_40px_rgba(0,0,0,0.2)]
-      w-80 space-y-4 z-20
-      border border-white/70"
-  >
-    <h2 className="font-bold text-lg mb-2">Total Score</h2>
+<div className="absolute right-5 top-5 z-20 flex flex-col space-y-1 items-end">
+  {/* Score Panel */}
+  {showFeatures && (
+    <div
+      className="bg-gradient-to-br from-white/90 via-blue-50/70 to-white/60
+        p-6 rounded-2xl
+        shadow-[0_15px_40px_rgba(0,0,0,0.2)]
+        w-80 space-y-4
+        border border-white/70"
+    >
+      <h2 className="font-bold text-lg mb-2">Total Score</h2>
 
-  <div className="text-2xl font-bold text-blue-600">
-  {/* Sum of all feature scores out of 48 */}
-  {calculatedFeatures.reduce((sum, f) => sum + f.score, 0).toFixed(1)} / 48
+      <div className="text-2xl font-bold text-blue-600">
+        {calculatedFeatures.reduce((sum, f) => sum + f.score, 0).toFixed(1)} / 48
+      </div>
+
+      <p className="text-sm text-gray-700">
+        This score represents the combined evaluation of all 12 nasal features.
+        Higher scores indicate better symmetry, proportion, and aesthetic alignment
+        of the nose according to the model’s assessment.
+      </p>
+    </div>
+  )}
+
+  {/* Nose Analysis (now directly under score panel) */}
+  <NoseAnalysis features={calculatedFeatures} mode="preop" />
 </div>
-
-    <p className="text-sm text-gray-700">
-      This score represents the combined evaluation of all 12 nasal features. Higher scores indicate better symmetry, proportion, and aesthetic alignment of the nose according to the model’s assessment.
-    </p>
-  </div>
-)}
-
 
         {/* 3D CANVAS */}
         <Canvas
@@ -458,11 +486,14 @@ export default function ThreeD_VertexColorViewer() {
           <directionalLight position={[1.5, 2, 3]} intensity={1.6} />
           <pointLight position={[-2, -1, 3]} intensity={1.2} />
 
-          <VertexColorModel 
-            objUrl={url} 
-            rotateY={Math.PI / 2} 
-            onCalculated={handleCalculatedPositions}
-          />
+          {url && (
+            <VertexColorModel 
+              objUrl={url} 
+              rotateY={Math.PI / 2} 
+              onCalculated={handleCalculatedPositions}
+              featureIndices={FEATURE_INDICES}
+            />
+          )}
 
           {showLandmarks && <Landmarks points={calculatedLandmarks} />}
           
@@ -485,7 +516,6 @@ export default function ThreeD_VertexColorViewer() {
 
   </>
 )}
-
 
 
           <HorizontalControls />

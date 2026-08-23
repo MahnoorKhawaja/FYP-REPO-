@@ -132,7 +132,7 @@ const Contact = () => {
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="h-80 bg-gradient-to-br from-blue-500/20 to-slate-700/40 border border-slate-600 rounded-lg flex items-center justify-center overflow-hidden">
               <img
-                src="https://images.unsplash.com/photo-1631217314831-c02b2e9de859?w=800&h=400&fit=crop"
+                src="/surg.jpg"
                 alt="Surgical Team"
                 className="w-full h-full object-cover opacity-80"
               />

@@ -1,15 +1,55 @@
 import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom"; 
+import { useParams } from "react-router-dom";
+
+
 
 export default function PreOperationPage() {
   const navigate = useNavigate();  
+  const [showGuide, setShowGuide] = useState(false);
+  const { patientId } = useParams();
+  const guideContent = {
+  front: {
+    text: [
+      "Face straight, looking forward",
+      "Neutral expression",
+      "Hair pulled back",
+      "Even lighting",
+    ],
+    img: "/guides/cshape.png",
+  },
+  left: {
+    text: [
+      "Exact 90° left profile",
+      "Head level",
+      "Nasal bridge fully visible",
+    ],
+    img: "/guides/sidecheck6.png",
+  },
+  right: {
+    text: [
+      "Exact 90° right profile",
+      "Same lighting as left",
+    ],
+    img: "/guides/righttt.png",
+  },
+  basal: {
+    text: [
+      "Nostrils clearly visible",
+      "Head slightly tilted upward",
+      "Camera below nose level",
+    ],
+    img: "/guides/basal_try.JPG",
+  },
+};
   const [images, setImages] = useState({
     front: null,
     left: null,
     right: null,
     basal: null,
   });
+
 
   const [preview, setPreview] = useState({
     front: null,
@@ -42,7 +82,8 @@ export default function PreOperationPage() {
 
     try {
       setLoading(true);
-      const response = await axios.post("http://localhost:5000/api/upload", formData, {
+      console.log("Submitting images for patient ID:", patientId);
+      const response = await axios.post(`http://localhost:8000/api/upload/${patientId}`, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -53,7 +94,7 @@ export default function PreOperationPage() {
       localStorage.setItem("noseScores", JSON.stringify(response.data["nose_scores"]));
       console.log("Stored filename in localStorage:", response.data["3d_results"]);
       alert("Images uploaded successfully!");
-      navigate("/success");
+      navigate(`/success/${patientId}`);
     } catch (error) {
       console.error("Upload failed:", error);
       alert("Failed to upload images. Check the console for details.");
@@ -65,8 +106,14 @@ export default function PreOperationPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-sky-500 p-8 text-white">
       <h1 className="text-3xl font-bold mb-8">Pre-Operation Image Upload</h1>
-
+<button
+  onClick={() => setShowGuide(!showGuide)}
+  className="mb-6 bg-white text-blue-800 px-4 py-2 rounded-xl font-semibold hover:bg-blue-100 transition"
+>
+  {showGuide ? "Hide Guide" : "Show Guide"}
+</button>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full max-w-6xl">
+        
         {[
           { label: "Front View", key: "front" },
           { label: "Left Profile", key: "left" },
@@ -81,6 +128,7 @@ export default function PreOperationPage() {
               htmlFor={key}
               className="cursor-pointer flex flex-col items-center"
             >
+              
               {preview[key] ? (
                 <img
                   src={preview[key]}
@@ -101,6 +149,22 @@ export default function PreOperationPage() {
               />
               <span className="text-sm font-medium">{label}</span>
             </label>
+            {showGuide && (
+  <div className="mt-3 text-xs bg-black/20 p-2 rounded-lg">
+    
+    <img
+      src={guideContent[key].img}
+      className="w-full h-24 object-cover rounded mb-2 border border-white/30"
+    />
+
+    <ul className="list-disc ml-4 opacity-80">
+      {guideContent[key].text.map((t, i) => (
+        <li key={i}>{t}</li>
+      ))}
+    </ul>
+
+  </div>
+)}
           </div>
         ))}
       </div>

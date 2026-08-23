@@ -97,7 +97,7 @@ const About = () => {
               </div>
               <div className="h-64 bg-gradient-to-br from-blue-500/20 to-slate-700/40 border border-slate-600 rounded-lg flex items-center justify-center overflow-hidden">
                 <img
-                  src="https://images.unsplash.com/photo-1576091160550-112173f7f869?w=500&h=400&fit=crop"
+                  src="/jinnah.png"
                   alt="Medical Research"
                   className="w-full h-full object-cover opacity-80"
                 />

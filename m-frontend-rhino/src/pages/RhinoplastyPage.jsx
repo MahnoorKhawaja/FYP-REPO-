@@ -1,7 +1,8 @@
+import { useNavigate, useParams } from "react-router-dom";
+
 export default function RhinoplastyPage() {
-  const navigate = (path) => {
-    window.location.href = path;
-  };
+  const navigate = useNavigate();
+  const { patientId } = useParams();
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 via-blue-700 to-sky-500 p-6">
@@ -15,14 +16,14 @@ export default function RhinoplastyPage() {
 
         <div className="flex gap-6 justify-center">
           <button
-            onClick={() => navigate("/preoperation")}
+            onClick={() => navigate(`/preoperation/${patientId}`)}
             className="px-8 py-4 text-lg font-semibold text-white bg-blue-600 rounded-xl shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all duration-300"
           >
             Pre Operation
           </button>
 
           <button
-            onClick={() => navigate("/postoperation")}
+            onClick={() => navigate(`/postoperation/${patientId}`)}
             className="px-8 py-4 text-lg font-semibold text-blue-900 bg-white rounded-xl shadow-lg hover:bg-blue-50 hover:text-blue-800 transition-all duration-300"
           >
             Post Operation

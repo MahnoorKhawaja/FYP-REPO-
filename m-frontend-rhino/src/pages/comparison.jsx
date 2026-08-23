@@ -4,22 +4,24 @@ import { Canvas, useLoader, useThree } from "@react-three/fiber";
 import { OrbitControls, OBJLoader } from "three-stdlib";
 import * as THREE from "three";
 import { Billboard, Html } from "@react-three/drei";
+import NoseAnalysis from "./NoseAnalysis";
+import { useParams } from "react-router-dom";
 
 /* =========================================
    LANDMARK INDICES
 ========================================= */
 const LANDMARK_INDICES = [
-  { name: "Point 1", vertexIndex: 47800 },
-  { name: "Point 2", vertexIndex: 48700 },
-  { name: "Point 3", vertexIndex: 48600 },
-  { name: "Point 4", vertexIndex: 39900 },
-  { name: "Point 5", vertexIndex: 48750 },
-  { name: "Point 6", vertexIndex: 59800 },
-  { name: "Point 7", vertexIndex: 48300 },
-  { name: "Point 8", vertexIndex: 40100 },
-  { name: "Point 9", vertexIndex: 37300 },
-  { name: "Point 10", vertexIndex: 60810 },
-  { name: "Point 11", vertexIndex: 60740 },
+  { name: "Nasion",  vertexIndex: 47800 },
+  { name: "Subnasale",  vertexIndex: 48700 },
+  { name: "Pronasale",  vertexIndex: 48600 },
+  { name: "Endocanthion_L",  vertexIndex: 39900 },
+  { name: "Labrale superius",  vertexIndex: 48750 },
+  { name: "Endocanthion_R",  vertexIndex: 59800 },
+  { name: "Glabella",  vertexIndex: 48300 },
+  { name: "Alar_L",  vertexIndex: 40100 },
+  { name: "Alar_curvature_L",  vertexIndex: 37300 },
+  { name: "Alar_curvature_R", vertexIndex: 60810 },
+  { name: "Alar_R", vertexIndex: 60740 },
 ];
 
 /* =========================================
@@ -133,12 +135,7 @@ function HighlightSphere({ position, radius = 0.15, scaleX = 2, scaleY = 1.5, sc
    OBJ MODEL & CALCULATION LOGIC
 ========================================= */
 
-function VertexColorModel({ 
-  objUrl, 
-  flipFront = false, 
-  rotateY = 0, 
-  onCalculated 
-}) {
+function VertexColorModel({ objUrl, flipFront = false, rotateY = 0, onCalculated, scores }){
   const rawObj = useLoader(OBJLoader, objUrl);
 
 // Make the loaded OBJ stable
@@ -222,14 +219,14 @@ useEffect(() => {
       position: getVertexWorldPosition(meshFound, lm.vertexIndex)
     }));
 
-    const calcFeatures = FEATURE_INDICES.map(ft => ({
+    const calcFeatures = FEATURE_INDICES.map((ft, idx) => ({
   name: ft.name,
   center: getVertexWorldPosition(meshFound, ft.vertexIndex),
-  score: ft.score,
-  radius: ft.radius ?? 0.15,   // fallback if undefined
-  scaleX: ft.scaleX ?? 1,
-  scaleY: ft.scaleY ?? 1,
-  scaleZ: ft.scaleZ ?? 1
+  score: scores?.[idx] ?? 0,
+  radius: ft.radius,
+  scaleX: ft.scaleX,
+  scaleY: ft.scaleY,
+  scaleZ: ft.scaleZ
 }));
 
     stableOnCalculated({ landmarks: calcLandmarks, features: calcFeatures });
@@ -243,27 +240,53 @@ useEffect(() => {
    MAIN COMPONENT
 ========================================= */
 export default function ThreeD_PrePostComparison() {
-  const navigate = useNavigate();
+  const navigate = useNavigate();  
+  const { patientId } = useParams();
+  const [preScores, setPreScores] = useState([]);
+  const [postScores, setPostScores] = useState([]);
+  const [preFilename, setPreFilename] = useState(null);
+  const [postFilename, setPostFilename] = useState(null);
 
-  // Example file names
-  let filename_pre = localStorage.getItem("resultFilename_pre");
-  let filename_post = localStorage.getItem("resultFilename_post");
-  console.log("Loaded filename pre:", filename_pre);
-  console.log("Loaded filename post:", filename_post);
-  let scores = localStorage.getItem("nose_scores");
-  console.log("Loaded scores:", scores);
-  filename_pre = filename_pre.replace(".obj", "_obj.obj");
-  filename_post = filename_post.replace(".obj", "_obj.obj");
-  const preOpFilename = filename_pre;
-  const postOpFilename = filename_post;
-  const preOpUrl = `/results/${preOpFilename}`;
-  const postOpUrl = `/results/${postOpFilename}`;
+  const preOpUrl = preFilename
+  ? `/results/${preFilename.replace(".obj", "_obj.obj")}`
+  : null;
+
+  const postOpUrl = postFilename
+    ? `/results/${postFilename.replace(".obj", "_obj.obj")}`
+    : null;
 
   const [preOpData, setPreOpData] = useState({ landmarks: [], features: [] });
   const [postOpData, setPostOpData] = useState({ landmarks: [], features: [] });
-  const [selectedFeature, setSelectedFeature] = useState(null);
   const [showPanel, setShowPanel] = useState(true);
+  const [showLandmarks, setShowLandmarks] = useState(false);
+  const [showFeatures, setShowFeatures] = useState(false);
+  const [selectedFeature, setSelectedFeature] = useState(null);
+  // const features = preOpData.features.map((f, i) => ({
+  //   name: f.name,
+  //   preScore: preScores[i] ?? 0,
+  //   postScore: postScores[i] ?? 0,
+  // }));
+  useEffect(() => {
+  if (!patientId) return;
 
+  const fetchData = async () => {
+    try {
+      const res = await fetch(`http://localhost:8000/comparison/${patientId}`);
+      const data = await res.json();
+
+      setPreScores(data.preop?.scores || []);
+      setPostScores(data.postop?.scores || []);
+
+      setPreFilename(data.preop?.filename);
+      setPostFilename(data.postop?.filename);
+
+    } catch (err) {
+      console.error("Error fetching comparison data:", err);
+    }
+  };
+
+  fetchData();
+}, [patientId]);
 
  return (
   <div className="min-h-screen w-full bg-gradient-to-b from-gray-100 to-gray-300 flex flex-col items-center justify-center">
@@ -271,12 +294,27 @@ export default function ThreeD_PrePostComparison() {
 
     <div className="flex gap-4 mb-4 z-20">
       <button
-        onClick={() => navigate("/rhinoplasty")}
+        onClick={() => navigate(`/rhinoplasty/${patientId}`)}
         className="relative bg-[linear-gradient(#262626,#262626),linear-gradient(#3b82f6,#3b82f6)] bg-[length:100%_2px,0_2px] bg-[position:100%_100%,0_100%] bg-no-repeat text-neutral-950 text-xl transition-[background-size] duration-300 hover:bg-[0_2px,100%_2px]"
       >
         Back to Analysis
       </button>
     </div>
+    <div className="flex gap-3 mb-3">
+  <button
+    onClick={() => setShowLandmarks(prev => !prev)}
+    className="px-4 py-2 bg-white rounded-lg shadow"
+  >
+    {showLandmarks ? "Hide Landmarks" : "Show Landmarks"}
+  </button>
+
+  <button
+    onClick={() => setShowFeatures(prev => !prev)}
+    className="px-4 py-2 bg-white rounded-lg shadow"
+  >
+    {showFeatures ? "Hide Features" : "Show Features"}
+  </button>
+</div>
 
     <div
       className="relative grid grid-cols-2 gap-4 rounded-2xl shadow-2xl border border-gray-300 p-4"
@@ -297,7 +335,27 @@ export default function ThreeD_PrePostComparison() {
             objUrl={preOpUrl}
             rotateY={Math.PI / 2}
             onCalculated={setPreOpData}
+            scores={preScores}
           />
+          <Landmarks points={showLandmarks ? preOpData.landmarks : []} />
+
+          {showFeatures && preOpData.features?.map((f, i) => (
+            <group key={`pre-${i}`}>
+              {selectedFeature === i && (
+                <>
+                  <HighlightSphere
+                    position={f.center}
+                    radius={f.radius}
+                    scaleX={f.scaleX}
+                    scaleY={f.scaleY}
+                    scaleZ={f.scaleZ}
+                    active={true}
+                  />
+                  {/* <FeatureLabel position={f.center} name={f.name} /> */}
+                </>
+              )}
+            </group>
+          ))}
 
           <HorizontalControls />
         </Canvas>
@@ -314,7 +372,28 @@ export default function ThreeD_PrePostComparison() {
             objUrl={postOpUrl}
             rotateY={Math.PI / 2}
             onCalculated={setPostOpData}
+            scores={postScores}
           />
+
+          <Landmarks points={showLandmarks ? postOpData.landmarks : []} />
+
+          {showFeatures && postOpData.features?.map((f, i) => (
+            <group key={`post-${i}`}>
+              {selectedFeature === i && (
+                <>
+                  <HighlightSphere
+                    position={f.center}
+                    radius={f.radius}
+                    scaleX={f.scaleX}
+                    scaleY={f.scaleY}
+                    scaleZ={f.scaleZ}
+                    active={true}
+                  />
+                  {/* <FeatureLabel position={f.center} name={f.name} /> */}
+                </>
+              )}
+            </group>
+          ))}
 
           <HorizontalControls />
         </Canvas>
@@ -341,32 +420,43 @@ export default function ThreeD_PrePostComparison() {
   `}
 >
   {showPanel && (() => {
-    const savedScores = JSON.parse(localStorage.getItem("nose_scores")) || { pre: [], post: [] };
-    const preScores = savedScores.pre;
-    const postScores = savedScores.post;
+  const features = preOpData.features.map((f, i) => ({
+    name: f.name,
+    preScore: preScores[i] ?? 0,
+    postScore: postScores[i] ?? 0,
+  }));
 
-    return (
-      <>
-        <h2 className="font-bold text-lg mb-2">Feature Comparison</h2>
+  return (
+    <>
+      <h2 className="font-bold text-lg mb-2">Feature Comparison</h2>
 
-        {preOpData.features.map((f, i) => {
-          const preScore = preScores[i] ?? 0;
-          const postScore = postScores[i] ?? 0;
-          const diff = postScore - preScore;
-          console.log(`Feature: ${f.name}, Pre: ${preScore}, Post: ${postScore}, Diff: ${diff}`);
+      {features.map((f, i) => {
+        const diff = f.postScore - f.preScore;
 
-          return (
-            <div key={i} className="flex justify-between mb-1">
+        return (
+          <div key={i} className="flex justify-between mb-1">
+            <button
+              onClick={() => setSelectedFeature(i)}
+              className={`flex justify-between w-full text-left px-2 py-1 rounded-lg transition
+                ${selectedFeature === i ? "bg-blue-100 font-semibold" : "hover:bg-gray-100"}
+              `}
+            >
               <span>{f.name}</span>
+
               <span className={`${diff > 0 ? "text-green-600" : diff < 0 ? "text-red-600" : ""}`}>
-                {preScore} → {postScore} ({diff >= 0 ? "+" : ""}{diff})
+                {f.preScore} → {f.postScore} ({diff >= 0 ? "+" : ""}{diff})
               </span>
-            </div>
-          );
-        })}
-      </>
-    );
-  })()}
+            </button>
+           
+          </div>
+        );
+      })}
+
+      <NoseAnalysis features={features} mode="comparison" />
+    </>
+  );
+})()}
+ 
 </div>
     </div>
   </div>
